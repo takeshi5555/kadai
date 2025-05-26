@@ -7,7 +7,7 @@ use App\Http\Controllers\SkillImportController;
 use App\Http\Controllers\MatchingController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\ReviewController;
-
+use App\Http\Controllers\MessageController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -89,4 +89,10 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/review/{matchingId}', [ReviewController::class, 'form']);
     Route::post('/review/{matchingId}', [ReviewController::class, 'submit']);
+});
+
+//message
+Route::middleware('auth')->group(function () {
+    Route::get('/message/{matchingId}', [MessageController::class, 'show'])->name('message.show');
+    Route::post('/message/{matchingId}', [MessageController::class, 'store'])->name('message.store');
 });

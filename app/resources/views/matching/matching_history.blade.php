@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('title', 'マッチング履歴')
@@ -7,10 +8,8 @@
 
 <h2>あなたが申請したマッチング</h2>
 @forelse ($applied as $match)
-    {{-- ステータスが不明（default）でない場合のみ表示 --}}
     @if (in_array($match->status, [0, 1, 2, 3]))
         <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px;">
-            {{-- 相手のユーザー名 (あなたが申請したので、相手はreceivingSkillを提供しているユーザー) --}}
             <p><strong>相手のユーザー:</strong> {{ $match->receivingSkill->user->name ?? '不明' }}</p>
             <p><strong>あなたが提供するスキル:</strong> {{ $match->offeringSkill->title ?? '不明' }}</p>
             <p><strong>相手が提供するスキル:</strong> {{ $match->receivingSkill->title ?? '不明' }}</p>
@@ -21,7 +20,6 @@
                     @case(1) <span style="color:green;">承認済み</span> @break
                     @case(2) <span style="color:blue;">完了</span> @break
                     @case(3) <span style="color:red;">拒否</span> @break
-                    {{-- @default はここには表示されない --}}
                 @endswitch
             </p>
             @if ($match->status === 0)
@@ -38,8 +36,12 @@
                 </form>
             @endif
 
+            {{-- メッセージリンクの追加 --}}
+            @if (in_array($match->status, [0, 1])) {{-- 申請中または承認済みの場合はメッセージ可能 --}}
+                <a href="/message/{{ $match->id }}"><button type="button">メッセージ</button></a>
+            @endif
+
             @if ($match->status === 2)
-                {{-- 自分が書いたレビュー --}}
                 @if ($match->myReview)
                     <div style="margin-top:10px; padding:10px; background:#f9f9f9;">
                         <strong>あなたのレビュー:</strong><br>
@@ -49,8 +51,6 @@
                 @else
                     <a href="/review/{{ $match->id }}">レビューを書く</a>
                 @endif
-
-                {{-- 相手が書いたレビュー --}}
                 @if ($match->partnerReview)
                     <div style="margin-top:10px; padding:10px; background:#e6ffe6;">
                         <strong>相手のレビュー:</strong><br>
@@ -62,7 +62,7 @@
                 @endif
             @endif
         </div>
-    @endif {{-- if (in_array($match->status, [0, 1, 2, 3])) の閉じタグ --}}
+    @endif
 @empty
     <p>申請したマッチングはありません。</p>
 @endforelse
@@ -71,10 +71,8 @@
 
 <h2>あなたに申請されたマッチング</h2>
 @forelse ($received as $match)
-    {{-- ステータスが不明（default）でない場合のみ表示 --}}
     @if (in_array($match->status, [0, 1, 2, 3]))
         <div style="border:1px solid #ccc; padding:10px; margin-bottom:10px;">
-            {{-- あなたに申請されたので、相手はofferingSkillを提供しているユーザー --}}
             <p><strong>相手のユーザー:</strong> {{ $match->offeringSkill->user->name ?? '不明' }}</p>
             <p><strong>あなたが提供するスキル:</strong> {{ $match->receivingSkill->title ?? '不明' }}</p>
             <p><strong>相手が提供するスキル:</strong> {{ $match->offeringSkill->title ?? '不明' }}</p>
@@ -85,7 +83,6 @@
                     @case(1) <span style="color:green;">承認済み</span> @break
                     @case(2) <span style="color:blue;">完了</span> @break
                     @case(3) <span style="color:red;">拒否</span> @break
-                    {{-- @default はここには表示されない --}}
                 @endswitch
             </p>
 
@@ -107,8 +104,12 @@
                 </form>
             @endif
 
+            {{-- メッセージリンクの追加 --}}
+            @if (in_array($match->status, [0, 1])) {{-- 申請中または承認済みの場合はメッセージ可能 --}}
+                <a href="/message/{{ $match->id }}"><button type="button">メッセージ</button></a>
+            @endif
+
             @if ($match->status === 2)
-                {{-- 自分が書いたレビュー --}}
                 @if ($match->myReview)
                     <div style="margin-top:10px; padding:10px; background:#f9f9f9;">
                         <strong>あなたのレビュー:</strong><br>
@@ -118,8 +119,6 @@
                 @else
                     <a href="/review/{{ $match->id }}">レビューを書く</a>
                 @endif
-
-                {{-- 相手が書いたレビュー --}}
                 @if ($match->partnerReview)
                     <div style="margin-top:10px; padding:10px; background:#e6ffe6;">
                         <strong>相手のレビュー:</strong><br>
@@ -131,7 +130,7 @@
                 @endif
             @endif
         </div>
-    @endif {{-- if (in_array($match->status, [0, 1, 2, 3])) の閉じタグ --}}
+    @endif
 @empty
     <p>申請されたマッチングはありません。</p>
 @endforelse
