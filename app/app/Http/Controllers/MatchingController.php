@@ -162,130 +162,129 @@ public function store(Request $request)
 
     }
 
-    public function approve($id)
+public function approve($id)
     {
-    $matching = Matching::findOrFail($id);
+        $matching = Matching::findOrFail($id);
 
-    
-    if ($matching->offeringSkill->user_id !== auth()->id()) {
-        abort(403);
+        // 承認は、マッチング申請を「受けた側」（＝あなたに申請されたマッチングで、あなたが提供するスキルを持つユーザー）が行う
+        // receivingSkill の user_id が、現在ログインしているユーザーの ID と一致するかチェック
+        if ($matching->receivingSkill->user_id !== auth()->id()) {
+            // 権限がない場合は403エラー
+            abort(403, 'このマッチングを承認する権限がありません。');
+        }
+
+        $matching->status = 1; // 承認
+        $matching->save();
+
+        return redirect('/matching/history')->with('message', 'マッチングを承認しました。');
     }
-
-    $matching->status = 1; // 承認
-    $matching->save();
-
-    return redirect('/matching/history')->with('message', 'マッチングを承認しました。');
-    }
-
-
 
     public function reject($id)
     {
-    $matching = Matching::findOrFail($id);
+        $matching = Matching::findOrFail($id);
 
-    if ($matching->offeringSkill->user_id !== auth()->id()) {
-        abort(403);
-    }
-
-    $matching->status = 3; // 拒否
-    $matching->save();
-
-    return redirect('/matching/history')->with('message', 'マッチングを拒否しました。');
-    }
-
-
-
-
-    public function history()
-
-    {
-        $userId = Auth::id();
-        // 自分が申請したマッチング
-        $applied = Matching::whereHas('offeringSkill', function ($q) use ($userId) { // ★修正: offeringSkill でフィルタ
-                $q->where('user_id', $userId);
-            })
-            ->with([
-                'offeringSkill',
-                'receivingSkill',
-                'myReview', // 自分が書いたレビュー
-                'partnerReview', // 相手が書いたレビュー
-                'applicantUser', // 申請者ユーザー
-                'recipientUser'  // 受領者ユーザー
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        // あなたに申請されたマッチング
-        $received = Matching::whereHas('receivingSkill', function ($q) use ($userId) { // ★修正: receivingSkill でフィルタ
-                $q->where('user_id', $userId);
-            })
-            ->with([
-                'offeringSkill',
-                'receivingSkill',
-                'myReview', // 自分が書いたレビュー
-                'partnerReview', // 相手が書いたレビュー
-                'applicantUser', // 申請者ユーザー
-                'recipientUser'  // 受領者ユーザー
-            ])
-            ->orderBy('created_at', 'desc')
-            ->get();
-            
-            $reviewedIds = [];
-    
-
-    
-            return view('matching.matching_history', [
-                'applied' => $applied,
-                'received' => $received,
-                'reviewedIds' => $reviewedIds,
-            ]);
+        // 拒否も、マッチング申請を「受けた側」（＝あなたに申請されたマッチングで、あなたが提供するスキルを持つユーザー）が行う
+        // receivingSkill の user_id が、現在ログインしているユーザーの ID と一致するかチェック
+        if ($matching->receivingSkill->user_id !== auth()->id()) {
+            // 権限がない場合は403エラー
+            abort(403, 'このマッチングを拒否する権限がありません。');
         }
 
+        $matching->status = 3; // 拒否
+        $matching->save();
 
+        return redirect('/matching/history')->with('message', 'マッチングを拒否しました。');
+    }
+
+    public function history()
+    {
+        $userId = Auth::id();
+        // 自分が申請したマッチング：自分が提供するスキル（offeringSkill）を元に申請したもの
+        $applied = Matching::whereHas('offeringSkill', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->with([
+                    'offeringSkill',
+                    'receivingSkill',
+                    'myReview',      // 自分が書いたレビュー
+                    'partnerReview', // 相手が書いたレビュー
+                    // applicantUser, recipientUser は Matchingモデルにリレーションがない場合はエラーになります。
+                    // もしこれらのリレーションがUserモデルへの直接的なリレーションであれば問題ありませんが、
+                    // offeringSkill.user, receivingSkill.user を使うのが一般的です。
+                    'offeringSkill.user', // offeringSkillの所有者（＝申請者）
+                    'receivingSkill.user' // receivingSkillの所有者（＝受領者）
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+        // あなたに申請されたマッチング：相手が提供するスキル（receivingSkill）に対して申請されたもの
+        $received = Matching::whereHas('receivingSkill', function ($q) use ($userId) {
+                    $q->where('user_id', $userId);
+                })
+                ->with([
+                    'offeringSkill',
+                    'receivingSkill',
+                    'myReview',      // 自分が書いたレビュー
+                    'partnerReview', // 相手が書いたレビュー
+                    // こちらも同様に offeringSkill.user, receivingSkill.user を推奨
+                    'offeringSkill.user',
+                    'receivingSkill.user'
+                ])
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+        $reviewedIds = []; // この変数の用途によってはロジックの追加が必要です
+
+        return view('matching.matching_history', [
+            'applied' => $applied,
+            'received' => $received,
+            'reviewedIds' => $reviewedIds,
+        ]);
+    }
 
     public function cancel($id)
     {
-    $matching = Matching::findOrFail($id);
+        $matching = Matching::findOrFail($id);
 
-    if ($matching->receivingSkill->user_id !== auth()->id()) {
-        abort(403);
-    }
+        // キャンセルは、マッチングを「申請した側」（＝offeringSkillのユーザー）が行う
+        if ($matching->offeringSkill->user_id !== auth()->id()) {
+            // 権限がない場合は403エラー
+            abort(403, 'このマッチング申請を取り消す権限がありません。');
+        }
 
-    $matching->delete();
-    return redirect('/matching/history')->with('message', 'マッチング申請を取り消しました。');
+        $matching->status = 4; // status 4 を「キャンセル」と定義している場合
+        $matching->save();
+
+        // もし物理的にレコードを削除したい場合は以下のコメントを外す（上の一行は削除）
+        // $matching->delete();
+
+        return redirect('/matching/history')->with('message', 'マッチング申請を取り消しました。');
     }
 
     public function complete($id)
-    
     {
-    $matching = Matching::findOrFail($id);
+        $matching = Matching::findOrFail($id);
+        $userId = auth()->id();
 
-    $userId = auth()->id();
+        // 完了は、申請者（offeringSkillのユーザー）または受領者（receivingSkillのユーザー）のどちらでも行える
+        if (
+            $matching->offeringSkill->user_id !== $userId &&
+            $matching->receivingSkill->user_id !== $userId
+        ) {
+            abort(403, 'このマッチングを完了する権限がありません。');
+        }
 
+        // 承認済みのみ完了可能
+        if ($matching->status !== 1) {
+            return redirect('/matching/history')->with('error', '完了できるのは承認済みのマッチングのみです。');
+        }
 
-    if (
-        $matching->offeringSkill->user_id !== $userId &&
-        $matching->receivingSkill->user_id !== $userId
-    ) {
-        abort(403);
+        $matching->status = 2; // 完了
+        $matching->save();
+
+        return redirect('/matching/history')->with('message', 'マッチングを完了しました。レビューを投稿できます。');
     }
-
-    // 承認済みのみ完了可能
-    if ($matching->status !== 1) {
-        return redirect('/matching/history')->with('error', '完了できるのは承認済みのマッチングのみです。');
-    }
-
-    $matching->status = 2;
-    $matching->save();
-
-    return redirect('/matching/history')->with('message', 'マッチングを完了しました。レビューを投稿できます。');
 }
-
-
-
-
-}
-
 
 //完了」ボタン → status = 2 に更新（レビュー入力解放）
 
