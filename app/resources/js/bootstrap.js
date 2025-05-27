@@ -1,3 +1,6 @@
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
 window._ = require('lodash');
 
 /**
@@ -26,3 +29,18 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 //     cluster: process.env.MIX_PUSHER_APP_CLUSTER,
 //     forceTLS: true
 // });
+
+window.Pusher = Pusher;
+
+window.Echo = new Echo({
+    broadcaster: 'pusher',
+    // .env ファイルの APP_KEY を Laravel Mix/Vite 経由で取得
+    key: process.env.MIX_PUSHER_APP_KEY || process.env.VITE_PUSHER_APP_KEY || 'your_app_key',
+    cluster: process.env.MIX_PUSHER_APP_CLUSTER || process.env.VITE_PUSHER_APP_CLUSTER || 'mt1', // ★この行を追加または修正★
+    wsHost: window.location.hostname, // ブラウザから見たホスト名 (例: localhost)
+    wsPort: 6001, // Echo Server のポート
+    forceTLS: false, // HTTPS でない場合は false
+    disableStats: true,
+    enabledTransports: ['ws', 'wss'],
+    // authEndpoint: '/broadcasting/auth' // デフォルトを使用
+});

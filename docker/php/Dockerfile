@@ -4,14 +4,25 @@ FROM php:8.1-fpm
 # composer イメージ内から特定のファイルをコピー
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# コマンドの実行
 # apt-getコマンドのアップデートと必要なライブラリやドライバのインストール
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && \
+    apt-get install -y \
     git \
     zip unzip \
     curl \
     gnupg \
-    && docker-php-ext-install pdo_mysql
+    build-essential \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash -
-RUN apt-get install -y nodejs
+# PHP 拡張機能をインストール
+RUN docker-php-ext-install pdo_mysql
+
+# PECL 経由で Redis 拡張をインストール
+RUN pecl install redis \
+    && docker-php-ext-enable redis \
+    && rm -rf /tmp/pear
+
+# Node.js 16.x のインストール
+RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
+    apt-get install -y nodejs

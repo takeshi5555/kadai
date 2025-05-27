@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>@yield('title', 'SkillSwap')</title>
+     <meta name="csrf-token" content="{{ csrf_token() }}">
     <style>
         body { font-family: sans-serif; margin: 0; }
         header { background: #f0f0f0; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -66,5 +67,6 @@
             });
         });
     </script>
+     <script src="{{ asset('js/app.js') }}" defer></script> @stack('scripts')
 </body>
 </html>

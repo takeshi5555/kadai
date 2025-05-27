@@ -1,0 +1,42 @@
+{
+    "authHost": "http://nginx:80",
+    "authEndpoint": "/broadcasting/auth",
+    "clients": [
+        {
+            "appId": "${APP_KEY}",
+            "key": "${APP_KEY}"  
+        }
+    ],
+    "channels": {
+        "private": ["matching.*"] 
+    },
+    "devMode": true, 
+    "host": null,    
+    "port": "6001",  
+    "protocol": "ws",
+    "server": "http", 
+    "sslCertPath": "",
+    "sslKeyPath": "",
+    "sslCertChainPath": "",
+    "sslPassphrase": "",
+    "apiOriginAllow": {
+        "allowCors": true,
+        "allowOrigin": "*", 
+        "allowMethods": ["GET", "POST"],
+        "allowHeaders": ["Origin", "Content-Type", "X-Auth-Token", "X-Requested-With", "Accept", "Authorization", "X-CSRF-TOKEN", "X-Socket-ID"]
+    },
+    "clientsAllowOrigin": "",
+    "pingInterval": 25000,
+    "pingTimeout": 60000,
+    "redis": {
+        "host": "redis",
+        "port": "6379",
+        "password": "" 
+    },
+    "socketio": {},
+    "secureOptions": 0,
+    "maxConnections": 1000,
+    "metrics": {
+        "enabled": false
+    }
+}

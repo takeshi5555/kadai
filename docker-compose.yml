@@ -1,24 +1,17 @@
 # docker-composeのバージョン指定
 version: '3.8'
-
-# コンテナ群の記述
 services:
-  # nginxというサービス
   nginx:
-    # コンテナ名指定
     container_name: curriculum-nginx
-    # 使用イメージの指定
     image: nginx:latest
-    # 同期ファイルの指定
     volumes:
       - ./docker/nginx:/etc/nginx/conf.d
       - ./app:/var/www/html
-    # 使用ポートの指定
     ports:
       - "80:80"
-    # 依存関係の指定 (指定したコンテナより後に立ち上がる)
     depends_on:
       - php
+      - echo-server # Nginx が Echo Server に依存するように追加
 
   php:
     container_name: curriculum-laravel
@@ -26,26 +19,39 @@ services:
     # Mac M1チップユーザーは以下のコメントアウトを解除して作業を進めてください
     # platform: linux/x86_64
     ###############################################################
-    
-    # どれを使ってビルド(コンテナ立ち上げを行うか)
     build:
-      # ディレクトリの指定
       context: ./
-      # 使用するDockerfile名の指定
       dockerfile: docker/php/Dockerfile
     volumes:
-    - ./app:/var/www/html
-    - ./docker/php/check_startup.sh:/tmp/check_startup.sh
-    # サーバーに対してオープンするポートを指定
+      - ./app:/var/www/html
+      - ./docker/php/check_startup.sh:/tmp/check_startup.sh
     expose:
       - "9000"
     depends_on:
       - db
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      # --- ここを修正 ---
+      BROADCAST_DRIVER: redis
+      # Laravel Echo Server (ローカル) の認証設定
+      # ここで設定する PUSHER_APP_KEY は laravel-echo-server.json と同じ値にすること
+      PUSHER_APP_KEY: ${APP_KEY} # ホストの .env の APP_KEY を使う
+      PUSHER_APP_ID: some_id # 必要に応じて任意のID (laravel-echo-serverでは重要ではないがLaravel側で必要)
+      PUSHER_APP_SECRET: some_secret # 必要に応じて任意のシークレット (laravel-echo-serverでは重要ではないがLaravel側で必要)
+      PUSHER_HOST: echo-server # LaravelがEcho Serverにイベントを送る際のホスト名（Docker内部のサービス名）
+      PUSHER_PORT: 6001
+      PUSHER_SCHEME: http
+      # JavaScriptに渡すEchoの設定
+      MIX_PUSHER_APP_KEY: ${APP_KEY} # Laravel Mix でビルドする app.js に埋め込むキー
+      VITE_PUSHER_APP_KEY: ${APP_KEY} # Vite でビルドする app.js に埋め込むキー
+      # --- 修正ここまで ---
+      APP_KEY: ${APP_KEY}
 
   db:
     container_name: curriculum-db
     image: mysql:5.7
-    # コンテナの環境変数を指定
     environment:
       MYSQL_ROOT_PASSWORD: root
       TZ: 'Asia/Tokyo'
@@ -62,10 +68,44 @@ services:
       - PMA_HOST=db
       - PMA_USER=root
       - PMA_PASSWORD=root
-    # コンテナの関連を指定
     links:
       - db
     ports:
       - 4040:80
     volumes:
       - ./phpmyadmin/sessions:/sessions
+
+  # Redis サービス (そのまま)
+  redis:
+    container_name: curriculum-redis
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: always
+
+  # Laravel Echo Server サービス
+  echo-server:
+    container_name: curriculum-echo-server
+    build:
+      context: .
+      dockerfile: docker/echo-server/Dockerfile
+    # --- ここを修正 ---
+    command: laravel-echo-server start # ★ npm install && を削除★
+    volumes:
+      - ./app:/var/www/html
+      # - /var/www/html/node_modules # ★この行を削除またはコメントアウト★
+    # --- 修正ここまで ---
+    ports:
+      - "6001:6001"
+    environment:
+      AUTH_HOST: http://nginx:80
+      APP_KEY: ${APP_KEY} # laravel-echo-server.json の ${APP_KEY} に渡される
+    depends_on:
+      - php
+      - redis
+
+volumes:
+  db_data:
+  redis_data:
