@@ -13,10 +13,14 @@ RUN apt-get update && \
     gnupg \
     build-essential \
     libssl-dev \
+    libpng-dev\
+    libjpeg-dev\
+    libfreetype6-dev \
+    libzip-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # PHP 拡張機能をインストール
-RUN docker-php-ext-install pdo_mysql
+RUN docker-php-ext-install pdo_mysql gd zip
 
 # PECL 経由で Redis 拡張をインストール
 RUN pecl install redis \
