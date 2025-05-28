@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Skill;
-
+use App\User;
 
 
 class SkillController extends Controller
 {
     public function index(Request $request)
     {
-         $query = Skill::query();
+         $query = Skill::query('user');
 
         // ログイン中のユーザーIDを取得
         // ユーザーがログインしているかを確認し、ログインしていなければnullを設定
@@ -42,7 +42,7 @@ class SkillController extends Controller
 
     public function show($id)
     {
-        $skill = Skill::findOrFail($id);
+         $skill = Skill::with('user')->findOrFail($id);
 
         return view('user.skill_detail', compact('skill'));
     }

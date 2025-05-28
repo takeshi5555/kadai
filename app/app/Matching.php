@@ -25,6 +25,8 @@ class Matching extends Model
     {
     return $this->belongsTo(Skill::class, 'receiving_skill_id');
     }
+
+
     public function myReview()
     {
         return $this->hasOne(\App\Review::class)
@@ -58,4 +60,11 @@ class Matching extends Model
             'user_id'
         );
     }
+
+        public function skill()
+    {
+        return $this->belongsTo(Skill::class);
+    }
+
+
 }

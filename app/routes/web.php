@@ -8,6 +8,8 @@ use App\Http\Controllers\MatchingController;
 use App\Http\Controllers\GoogleCalendarController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\MessageController;
+use App\Http\Controllers\MainController;
+use App\Http\Controllers\UserController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -42,6 +44,9 @@ Route::post('/password/form', [AuthController::class, 'resetPassword']);
 Route::get('/password/complete', [AuthController::class, 'showPwdComplete']);
 // パスワード再設定関連
 
+
+//main
+Route::get('/main', [MainController::class, 'index'])->name('main');
 
 //スキル関係
 Route::get('/skill/search', [SkillController::class, 'index']);
