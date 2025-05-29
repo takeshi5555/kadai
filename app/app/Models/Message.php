@@ -1,10 +1,10 @@
 <?php
 
-namespace App; // または App\Models;
+namespace App\Models; // または App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\User;
+use App\Models\User;
 
 class Message extends Model
 {

@@ -3,14 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class User extends Authenticatable
 {
-    use Notifiable;
+    use HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -39,22 +38,39 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    
     public function skills()
     {
         return $this->hasMany(Skill::class, 'user_id'); // ユーザーが登録したスキル
     }
 
+
     // マッチング履歴のリレーション
     // SQLを見ると、matchingsテーブルには`offer_user_id`と`request_user_id`があります。
     // どちらのユーザーから見てもマッチング履歴として取得できるようにリレーションを定義します。
-    public function offeredMatchings()
+       public function offeredMatchings()
     {
-        return $this->hasMany(Matching::class, 'offer_user_id');
+        return $this->hasManyThrough(
+            Matching::class,      // 最終的に取得したいモデル
+            Skill::class,         // 中間モデル
+            'user_id',            // Skillテーブルの外部キー（UserのIDを指す）
+            'offering_skill_id',  // Matchingテーブルの外部キー（SkillのIDを指す）
+            'id',                 // Userテーブルのローカルキー
+            'id'                  // Skillテーブルのローカルキー
+        );
     }
 
+    // ユーザーがリクエスト側として関わるマッチング (ユーザーがリクエストするスキルを含むマッチング)
     public function requestedMatchings()
     {
-        return $this->hasMany(Matching::class, 'request_user_id');
+        return $this->hasManyThrough(
+            Matching::class,
+            Skill::class,
+            'user_id',
+            'receiving_skill_id',
+            'id',
+            'id'
+        );
     }
 
     // 両方のマッチングを結合して取得するアクセサ（オプション）
@@ -84,5 +100,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Message::class, 'receiver_id');
     }
-}
 
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
+}

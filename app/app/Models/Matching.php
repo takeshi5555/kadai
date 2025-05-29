@@ -1,12 +1,12 @@
 <?php
 
-namespace App;
+namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use App\Skill;
-use App\Review;
-use App\User;
+use App\Models\Skill;
+use App\Models\Review;
+use App\Models\User;
 
 
 class Matching extends Model
@@ -108,6 +108,17 @@ class Matching extends Model
     public function reviewFromPartner() 
     {
         return $this->hasOne(Review::class, 'matching_id')->where('reviewee_id', Auth::id());
+    }
+
+        public function getStatusTextAttribute()
+    {
+        switch ($this->status) {
+            case 0: return '保留中';
+            case 1: return '承認済み';
+            case 2: return '完了';
+            case 3: return 'キャンセル';
+            default: return '不明';
+        }
     }
 
 }
