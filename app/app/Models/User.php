@@ -105,4 +105,26 @@ class User extends Authenticatable
     {
         return $this->hasMany(Review::class);
     }
+
+
+    // ユーザーのロールをチェックするヘルパーメソッド (推奨)
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isModerator(): bool
+    {
+        return $this->role === 'moderator';
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return in_array($this->role, $roles);
+    }
 }

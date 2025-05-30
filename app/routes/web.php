@@ -12,6 +12,12 @@ use App\Http\Controllers\MainController;
 use App\Http\Controllers\UserController; // MypageControllerもこのコントローラーで扱うか、別途MypageControllerを作成
 use App\Http\Controllers\MypageController; // マイページ専用のコントローラーを明確にする
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminsController;
+use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Admin\SkillsController;
+use App\Http\Controllers\Admin\ReportsController;
+
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -102,3 +108,21 @@ Route::middleware(['auth'])->group(function () {
     //reports
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
 });
+
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+
+    // 管理者 ('admin') ロールのみがアクセスできるルート
+    Route::middleware(['role:admin'])->group(function () {
+        Route::get('/', [AdminsController::class, 'index'])->name('index'); // 管理者ダッシュボード
+        Route::resource('users', UsersController::class)->except(['show', 'create', 'store']); // ユーザー管理
+        Route::resource('skills', SkillsController::class)->except(['show', 'create', 'store']); // スキル管理
+    });
+
+    // 管理者 ('admin') またはモデレーター ('moderator') ロールのどちらかがアクセスできるルート
+    // これらのルートも '/admin' URLプレフィックスと 'admin.' ルート名プレフィックスを持つ
+    Route::middleware(['role:admin,moderator'])->group(function () {
+        Route::resource('reports', ReportsController::class)->except(['create', 'store', 'edit']); // 通報管理
+    });
+
+});
+
