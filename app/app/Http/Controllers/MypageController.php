@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Skill;
 use App\Models\Matching;
 use App\Models\Message;
+use App\Models\User;
 
 class MypageController extends Controller
 {
@@ -55,14 +56,30 @@ class MypageController extends Controller
                                     ])
                                     ->get();
 
+                                    
         // 両方のコレクションを結合し、重複を排除して最新のものからソート
-        $matchings = $offeredMatchings->merge($requestedMatchings)
-                                      ->unique('id')
-                                      ->sortByDesc('created_at');
+         $offeredMatchings->each(function ($matching) {
+            $matching->statusText = $this->getMatchingStatusText($matching->status);
+        });
+        $requestedMatchings->each(function ($matching) {
+            $matching->statusText = $this->getMatchingStatusText($matching->status);
+        });
 
         // 未読メッセージのカウント
         $unreadMessagesCount = $user->receivedMessages()->whereNull('read_at')->count();
 
-        return view('mypage.index', compact('user', 'skills', 'matchings', 'unreadMessagesCount'));
+        return view('mypage.index', compact('user', 'skills', 'offeredMatchings', // 自分が提供したスキル関連のマッチング
+            'requestedMatchings', 'unreadMessagesCount'));
+    }
+
+     private function getMatchingStatusText($status)
+    {
+        switch ($status) {
+            case 0: return '保留中';
+            case 1: return '承認済み';
+            case 2: return '完了';
+            case 3: return 'キャンセル';
+            default: return '不明';
+        }
     }
 }

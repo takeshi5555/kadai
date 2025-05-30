@@ -11,7 +11,7 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\MainController;
 use App\Http\Controllers\UserController; // MypageControllerもこのコントローラーで扱うか、別途MypageControllerを作成
 use App\Http\Controllers\MypageController; // マイページ専用のコントローラーを明確にする
-
+use App\Http\Controllers\ReportController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -98,4 +98,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/message/{matchingId}', [MessageController::class, 'show'])->name('message.show');
     Route::post('/message/{matchingId}', [MessageController::class, 'store'])->name('message.store');
 
+
+    //reports
+    Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
 });

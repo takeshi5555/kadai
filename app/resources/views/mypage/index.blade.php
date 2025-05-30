@@ -64,101 +64,135 @@
     <div class="matching-history card">
         <div class="card-body">
             <h2>マッチング履歴</h2>
-            @if($matchings->isEmpty())
-                <p>まだマッチング履歴がありません。</p>
-            @else
-                <ul style="list-style: none; padding: 0;">
-                    @foreach($matchings as $matching)
-                        <li class="card" style="margin-bottom: 15px;">
-                            <div class="card-body">
-                                <h3>
-                                    {{-- ★ここを title に変更 --}}
-                                    <span style="color: #007bff;">{{ $matching->offeringSkill->title ?? 'N/A' }}</span>
-                                    を提供する
-                                    <span style="color: #28a745;">{{ $matching->offerUser->name ?? 'N/A' }}</span>
-                                    さんと、
-                                    {{-- ★ここを title に変更 --}}
-                                    <span style="color: #007bff;">{{ $matching->receivingSkill->title ?? 'N/A' }}</span>
-                                    をリクエストする
-                                    <span style="color: #28a745;">{{ $matching->requestUser->name ?? 'N/A' }}</span>
-                                    さんのマッチング
-                                </h3>
-                                <p><strong>ステータス:</strong> <span style="font-weight: bold; color: {{ $matching->status == 1 ? 'green' : ($matching->status == 3 ? 'red' : 'orange') }}">{{ $matching->statusText }}</span></p>
-                                <p><strong>予定日時:</strong> {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}</p>
-                                <p><strong>マッチングID:</strong> {{ $matching->id }}</p>
+ {{-- 自分が申し込んだマッチング --}}
+        <h4 class="mt-4">あなたが申し込んだマッチング</h4>
+        @if($requestedMatchings->isEmpty())
+            <p>あなたが申し込んだマッチングはまだありません。</p>
+        @else
+            <ul style="list-style: none; padding: 0;">
+                @foreach($requestedMatchings as $matching)
+                    <li class="card" style="margin-bottom: 15px;">
+                        <div class="card-body">
+                            <h3>
+                                <span style="color: #007bff;">{{ $matching->offeringSkill->title ?? 'N/A' }}</span>
+                                を提供する
+                                <span style="color: #28a745;">{{ $matching->offerUser->name ?? 'N/A' }}</span>
+                                さんへの申し込み
+                            </h3>
+                            <p><strong>ステータス:</strong> <span style="font-weight: bold; color: {{ $matching->status == 1 ? 'green' : ($matching->status == 3 ? 'red' : 'orange') }}">{{ $matching->statusText }}</span></p>
+                            <p><strong>予定日時:</strong> {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}</p>
+                            <p><strong>マッチングID:</strong> {{ $matching->id }}</p>
 
-                                {{-- レビュー内容を直接表示するブロック --}}
-                                @if($matching->status == 2) {{-- ステータスが「完了」の場合のみレビューを表示 --}}
-                                    @if(Auth::id() == $matching->offerUser->id || Auth::id() == $matching->requestUser->id) {{-- 自分がマッチングに関わっている場合 --}}
-                                        <div class="reviews-section mt-3 p-3 border rounded bg-light">
-                                            {{-- 自分のレビューがある場合 --}}
-                                            @if($matching->myReview)
-                                                <h5 class="text-primary">あなたのレビュー</h5>
-                                                {{-- ★ここを rating に変更 --}}
-                                                <p><strong>評価:</strong> {{ $matching->myReview->rating }} / 5</p>
-                                                <p><strong>コメント:</strong> {{ $matching->myReview->comment ?? 'コメントなし' }}</p>
-                                            @else
-                                                <p class="text-warning">あなたはまだレビューを投稿していません。</p>
-                                                <a href="{{ route('review.form', ['matchingId' => $matching->id]) }}" class="btn btn-success btn-sm">相手をレビューする</a>
-                                            @endif
-
-                                            <hr class="my-2">
-
-                                            {{-- 相手からのレビューがある場合 --}}
-                                            @if($matching->reviewFromPartner)
-                                                <h5 class="text-success">{{ $matching->reviewFromPartner->reviewer->name ?? '相手' }}さんからのレビュー</h5>
-                                                {{-- ★ここを rating に変更 --}}
-                                                <p><strong>評価:</strong> {{ $matching->reviewFromPartner->rating }} / 5</p>
-                                                <p><strong>コメント:</strong> {{ $matching->reviewFromPartner->comment ?? 'コメントなし' }}</p>
-                                            @else
-                                                <p class="text-info">相手からのレビューはまだありません。</p>
-                                            @endif
-                                        </div>
-                                    @endif
+                            {{-- レビュー内容表示ブロック (ここでは簡略化。必要に応じて前回のものを適宜組み込む) --}}
+                            @if($matching->status == 2)
+                                <p class="text-info">このマッチングは完了しています。</p>
+                                @if($matching->myReview)
+                                <div class="p-2 mb-2 rounded" style="background-color: #e6f7ff; border: 1px solid #cceeff;"> 
+                                    <p class="text-primary">あなたのレビュー: 評価 {{ $matching->myReview->rating }} / 5<br>コメント: {{ $matching->myReview->comment ?? 'なし' }}</p></div>
                                 @else
-                                    <p class="text-muted mt-3">マッチング完了後にレビューが表示されます。</p>
+                                    <a href="{{ route('review.form', ['matchingId' => $matching->id]) }}" class="btn btn-success btn-sm">相手をレビューする</a>
                                 @endif
-                                {{-- レビュー内容表示ブロックここまで --}}
-
-                                {{-- メッセージページへのリンク --}}
-                                <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" class="btn btn-primary btn-sm mt-3">メッセージを見る</a>
-
-                                {{-- マッチングの承認・拒否・キャンセル・完了ボタン --}}
-                                @if($matching->status == 0) {{-- 保留中の場合 --}}
-                                    @if(Auth::id() == $matching->requestUser->id)
-                                        <p style="color: gray;">承認待ちです。</p>
-                                    @elseif(Auth::id() == $matching->offerUser->id)
-                                        <form action="{{ route('matching.approve', $matching->id) }}" method="POST" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="btn btn-success btn-sm">承認する</button>
-                                        </form>
-                                        <form action="{{ route('matching.reject', $matching->id) }}" method="POST" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="btn btn-danger btn-sm">拒否する</button>
-                                        </form>
-                                    @endif
-                                @elseif($matching->status == 1) {{-- 承認済みの場合 --}}
-                                    <p style="color: blue;">承認済みです。</p>
-                                    @if(Auth::id() == $matching->offerUser->id || Auth::id() == $matching->requestUser->id)
-                                        <form action="{{ route('matching.complete', $matching->id) }}" method="POST" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="btn btn-info btn-sm">完了する</button>
-                                        </form>
-                                        <form action="{{ route('matching.cancel', $matching->id) }}" method="POST" style="display:inline;">
-                                            @csrf
-                                            <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
-                                        </form>
-                                    @endif
+                                @if($matching->reviewFromPartner)
+                                 <div class="p-2 mb-2 rounded" style="background-color: #e9fbe9; border: 1px solid #c2ecc2;">
+                                    <p class="text-success">相手からのレビュー: 評価 {{ $matching->reviewFromPartner->rating }} / 5<br>コメント: {{ $matching->reviewFromPartner->comment ?? 'なし' }}</p></div>
+                                @else
+                                    <p class="text-muted">相手からのレビューはまだありません。</p></div>
                                 @endif
-                                
-                            </div>
-                        </li>
-                    @endforeach
-                </ul>
-                <div style="text-align: center; margin-top: 20px;">
-                    <a href="{{ route('matching.history.index') }}" class="btn btn-info">全マッチング履歴を見る</a>
-                </div>
-            @endif
+                            @else
+                                <p class="text-muted mt-3">マッチング完了後にレビューが表示されます。</p>
+                            @endif
+
+                            <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" class="btn btn-primary btn-sm mt-3">メッセージを見る</a>
+
+                            {{-- キャンセルボタン (自分が申し込んだ側の場合のみ) --}}
+                            @if($matching->status == 0 || $matching->status == 1) {{-- 保留中または承認済みの場合にキャンセル可能 --}}
+                                <form action="{{ route('matching.cancel', $matching->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
+                                </form>
+                            @endif
+                            @if($matching->status == 1) {{-- 承認済みの場合に完了可能 --}}
+                                <form action="{{ route('matching.complete', $matching->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-info btn-sm">完了する</button>
+                                </form>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
+        {{-- 相手から申し込まれたマッチング --}}
+        <h4 class="mt-4">相手から申し込まれたマッチング</h4>
+        @if($offeredMatchings->isEmpty())
+            <p>相手から申し込まれたマッチングはまだありません。</p>
+        @else
+            <ul style="list-style: none; padding: 0;">
+                @foreach($offeredMatchings as $matching)
+                    <li class="card" style="margin-bottom: 15px;">
+                        <div class="card-body">
+                            <h3>
+                                <span style="color: #007bff;">{{ $matching->receivingSkill->title ?? 'N/A' }}</span>
+                                をリクエストする
+                                <span style="color: #28a745;">{{ $matching->requestUser->name ?? 'N/A' }}</span>
+                                さんからの申し込み
+                            </h3>
+                            <p><strong>ステータス:</strong> <span style="font-weight: bold; color: {{ $matching->status == 1 ? 'green' : ($matching->status == 3 ? 'red' : 'orange') }}">{{ $matching->statusText }}</span></p>
+                            <p><strong>予定日時:</strong> {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}</p>
+                            <p><strong>マッチングID:</strong> {{ $matching->id }}</p>
+
+                            {{-- レビュー内容表示ブロック (ここでは簡略化。必要に応じて前回のものを適宜組み込む) --}}
+                            @if($matching->status == 2)
+                                <p class="text-info">このマッチングは完了しています。</p>
+                                @if($matching->myReview)
+                                <div class="p-2 mb-2 rounded" style="background-color: #e6f7ff; border: 1px solid #cceeff;">
+                                    <p class="text-primary">あなたのレビュー: 評価 {{ $matching->myReview->rating }} / 5<br>
+
+                                        コメント: {{ $matching->myReview->comment ?? 'なし' }}</p></div>
+                                @else
+                                    <a href="{{ route('review.form', ['matchingId' => $matching->id]) }}" class="btn btn-success btn-sm">相手をレビューする</a>
+                                @endif
+                                @if($matching->reviewFromPartner)
+                                 <div class="p-2 mb-2 rounded" style="background-color: #e9fbe9; border: 1px solid #c2ecc2;"> {{-- 相手からのレビューブロック --}}
+                                    <p class="text-success">相手からのレビュー: 評価 {{ $matching->reviewFromPartner->rating }} / 5<br> コメント: {{ $matching->reviewFromPartner->comment ?? 'なし' }}</p></div>
+                                @else
+                                    <p class="text-muted">相手からのレビューはまだありません。</p>
+                                @endif
+                            @else
+                                <p class="text-muted mt-3">マッチング完了後にレビューが表示されます。</p>
+                            @endif
+
+                            <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" class="btn btn-primary btn-sm mt-3">メッセージを見る</a>
+
+                            {{-- 承認・拒否・完了・キャンセルボタン (自分が申し込まれた側の場合) --}}
+                            @if($matching->status == 0) {{-- 保留中の場合のみ承認/拒否 --}}
+                                <form action="{{ route('matching.approve', $matching->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success btn-sm">承認する</button>
+                                </form>
+                                <form action="{{ route('matching.reject', $matching->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-danger btn-sm">拒否する</button>
+                                </form>
+                            @elseif($matching->status == 1) {{-- 承認済みの場合に完了/キャンセル --}}
+                                <form action="{{ route('matching.complete', $matching->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-info btn-sm">完了する</button>
+                                </form>
+                                <form action="{{ route('matching.cancel', $matching->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
+                                </form>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+
+                     <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ route('matching.history.index') }}" class="btn btn-info">全マッチング履歴を見る</a>
         </div>
     </div>
 </div>

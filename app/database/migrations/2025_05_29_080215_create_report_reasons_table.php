@@ -13,7 +13,7 @@ class CreateReportReasonsTable extends Migration
      */
     public function up()
     {
-        Schema::create('report_reasons', function (Blueprint $table) {
+                Schema::create('report_reasons', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('parent_id')->nullable(); // 親理由のID (2段階目の選択肢の場合)
             $table->string('reason_text'); // 通報理由のテキスト

@@ -5,7 +5,7 @@
     <title>@yield('title', 'SkillSwap')</title>
      <meta name="csrf-token" content="{{ csrf_token() }}">
 
-      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpDtWE7z5wD2t6u6S/wBnm70FqI5uJ2bS3" crossorigin="anonymous">
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         /* --- ここからボタンのスタイルを追加 --- */
         .main-cta-buttons {
@@ -238,7 +238,8 @@
             });
         });
     </script>
-     <script src="{{ asset('js/app.js') }}" defer></script> @stack('scripts')
-     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiW6Jz0C4Q/W0g100lq91b3R0M8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ asset('js/app.js') }}" defer></script>
+    @stack('scripts')
 </body>
 </html>

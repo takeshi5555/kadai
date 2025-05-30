@@ -28,7 +28,7 @@ class CreateReportsTable extends Migration
             $table->foreignId('reason_id')->constrained('report_reasons'); // 大まかな通報理由
             $table->foreignId('sub_reason_id')->nullable()->constrained('report_reasons'); // より具体的な通報理由
 
-
+            $table->text('comment')->nullable(); // 自由記述のコメント
 
             $table->string('status')->default('unprocessed'); // 0: unprocessed, 1: processed を文字列に変更
 
