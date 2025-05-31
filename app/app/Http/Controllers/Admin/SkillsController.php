@@ -36,12 +36,10 @@ class SkillsController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'is_active' => 'boolean', 
         ]);
 
         $skill->title = $request->input('title');
         $skill->description = $request->input('description');
-        $skill->is_active = $request->has('is_active');
         $skill->save();
 
         return redirect()->route('admin.skills.index')->with('success', 'スキル情報が更新されました。');

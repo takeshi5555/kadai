@@ -116,12 +116,24 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::get('/', [AdminsController::class, 'index'])->name('index'); // 管理者ダッシュボード
         Route::resource('users', UsersController::class)->except(['show', 'create', 'store']); // ユーザー管理
         Route::resource('skills', SkillsController::class)->except(['show', 'create', 'store']); // スキル管理
+
+
+                // ユーザーBAN/BAN解除のルート
+        Route::put('users/{user}/ban', [UsersController::class, 'toggleBan'])->name('users.toggleBan');
+        
+        // ReportsController のルート (既存のresourceは削除または修正)
+        // updateはAJAX用なので個別定義
+        Route::put('reports/{report}', [ReportsController::class, 'update'])->name('reports.update');
+        // warnUserはPOSTリクエスト
+        Route::post('reports/{report}/warn', [ReportsController::class, 'warnUser'])->name('reports.warnUser');
     });
+
+    
 
     // 管理者 ('admin') またはモデレーター ('moderator') ロールのどちらかがアクセスできるルート
     // これらのルートも '/admin' URLプレフィックスと 'admin.' ルート名プレフィックスを持つ
     Route::middleware(['role:admin,moderator'])->group(function () {
-        Route::resource('reports', ReportsController::class)->except(['create', 'store', 'edit']); // 通報管理
+        Route::resource('reports', ReportsController::class)->except(['create', 'store', 'edit','update']); // 通報管理
     });
 
 });

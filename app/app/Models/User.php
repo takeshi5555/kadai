@@ -17,7 +17,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'name', 'email', 'password','role','is_banned',
     ];
 
     /**
@@ -36,6 +36,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_banned' => 'boolean', 
     ];
 
     
@@ -127,4 +128,5 @@ class User extends Authenticatable
     {
         return in_array($this->role, $roles);
     }
+    
 }

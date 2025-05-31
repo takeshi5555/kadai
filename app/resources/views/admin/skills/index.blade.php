@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'スキル管理')
 
@@ -29,7 +29,7 @@
             <form action="{{ route('admin.skills.index') }}" method="GET" class="mb-3">
                 <div class="input-group">
                     <input type="text" name="search" class="form-control" placeholder="タイトルまたは説明で検索" value="{{ request('search') }}">
-                    <button class="btn btn-outline-secondary" type="submit">検索</button>
+                    <button class="btn btn-outline-secondary ms-2" type="submit">検索</button>
                     @if(request('search'))
                         <a href="{{ route('admin.skills.index') }}" class="btn btn-outline-danger">クリア</a>
                     @endif
@@ -57,7 +57,13 @@
                                 <td>{{ $skill->user->name ?? '不明' }}</td> {{-- リレーションがあれば表示 --}}
                                 <td>{{ $skill->created_at ? $skill->created_at->format('Y-m-d H:i') : 'N/A' }}</td>
                                 <td>
-                                    <a href="{{ route('admin.skills.edit', $skill) }}" class="btn btn-sm btn-info text-white me-1">編集</a>
+                                    <button type="button" class="btn btn-sm btn-info text-white me-1 edit-skill-btn"
+                                            data-bs-toggle="modal" data-bs-target="#editSkillModal"
+                                            data-id="{{ $skill->id }}"
+                                            data-title="{{ $skill->title }}"
+                                            data-description="{{ $skill->description }}">
+                                        編集
+                                    </button>
                                     <form action="{{ route('admin.skills.destroy', $skill) }}" method="POST" class="d-inline-block" onsubmit="return confirm('本当にこのスキルを削除しますか？');">
                                         @csrf
                                         @method('DELETE')
@@ -76,9 +82,82 @@
 
             {{-- ページネーションリンク --}}
             <div class="d-flex justify-content-center">
-                {{ $skills->appends(request()->query())->links() }}
+                {{ $skills->appends(request()->query())->links('pagination::simple-bootstrap-4') }}
+
             </div>
         </div>
     </div>
 </div>
+
+
+
+{{-- スキル編集モーダル --}}
+<div class="modal fade" id="editSkillModal" tabindex="-1" aria-labelledby="editSkillModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editSkillModalLabel">スキル編集</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editSkillForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="modalSkillTitle" class="form-label">タイトル</label>
+                        <input type="text" class="form-control" id="modalSkillTitle" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="modalSkillDescription" class="form-label">説明</label>
+                        <textarea class="form-control" id="modalSkillDescription" name="description" rows="5"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">更新</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
+
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const editSkillModal = document.getElementById('editSkillModal');
+    editSkillModal.addEventListener('show.bs.modal', function (event) {
+        // モーダルを開くボタン
+        const button = event.relatedTarget;
+
+        // データ属性からスキル情報を取得
+        const skillId = button.getAttribute('data-id');
+        const skillTitle = button.getAttribute('data-title');
+        const skillDescription = button.getAttribute('data-description');
+        const skillIsActive = button.getAttribute('data-is_active');
+
+        // モーダル内のフォーム要素を取得
+        const modalForm = editSkillModal.querySelector('#editSkillForm');
+        const modalTitleInput = editSkillModal.querySelector('#modalSkillTitle');
+        const modalDescriptionTextarea = editSkillModal.querySelector('#modalSkillDescription');
+        const modalIsActiveCheckbox = editSkillModal.querySelector('#modalSkillIsActive');
+
+        // フォームのアクションURLを設定
+        // 例: /admin/skills/{id}
+        modalForm.action = `/admin/skills/${skillId}`;
+
+        // フォームにスキル情報を設定
+        modalTitleInput.value = skillTitle;
+        modalDescriptionTextarea.value = skillDescription;
+        modalIsActiveCheckbox.checked = (skillIsActive === '1'); // '1'の場合はチェック
+    });
+
+    // モーダルが閉じられたときにフォームをリセット（任意）
+    editSkillModal.addEventListener('hidden.bs.modal', function (event) {
+        const modalForm = editSkillModal.querySelector('#editSkillForm');
+        modalForm.reset(); // フォームをリセット
+    });
+});
+</script>
+@endpush
