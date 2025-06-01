@@ -84,7 +84,7 @@ class AuthController extends Controller
     session()->forget(['name', 'email', 'password']);
 
     // フラッシュメッセージを添えてログイン画面へ
-    return redirect('/login')->with('message', '新規登録が完了しました。ログインしてください。');
+    return redirect('/login')->with('status', '新規登録が完了しました。ログインしてください。');
 
     }
 

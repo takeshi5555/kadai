@@ -70,4 +70,12 @@ class RegisterController extends Controller
             'password' => Hash::make($data['password']),
         ]);
     }
+    public function registerConfirm(Request $request)
+
+    {
+    return redirect('/login')->with('status', '登録が完了しました。ログインしてください。');
+}
+
+
+    
 }

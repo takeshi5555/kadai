@@ -102,6 +102,8 @@ services:
     environment:
       AUTH_HOST: http://nginx:80
       APP_KEY: ${APP_KEY} # laravel-echo-server.json の ${APP_KEY} に渡される
+      REDIS_HOST: redis # Redisサービス名をホストとして指定
+      REDIS_PORT: 6379  # Redisのデフォルトポート
     depends_on:
       - php
       - redis

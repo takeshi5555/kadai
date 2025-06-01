@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\AdminsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\SkillsController;
 use App\Http\Controllers\Admin\ReportsController;
+use Illuminate\Http\Request;
 
 /*
 |--------------------------------------------------------------------------
@@ -37,13 +38,17 @@ Route::get('/', function () {
 // Authentication Pages (認証関連ページ)
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->name('logout'); // 名前の重複を避けるため上に移動
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout'); 
 
 // Signup Pages (新規登録関連ページ)
 Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
 Route::post('/signup', [AuthController::class, 'signup']);
 Route::get('/signup/confirm', [AuthController::class, 'showSignupConfirm'])->name('signup.confirm');
 Route::post('/signup/confirm', [AuthController::class, 'confirmSignup']);
+
+Route::post('/signup/back', function (Request $request) {
+    return redirect('/signup')->withInput($request->only('name', 'email'));
+})->name('signup.back');
 
 // Password Reset Pages (パスワード再設定関連ページ)
 Route::get('/password/reset', [AuthController::class, 'showPwdReset'])->name('password.request'); // Laravelのデフォルト名に寄せる
