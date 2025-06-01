@@ -33,38 +33,39 @@
     </div>
     @endif
 
-    <div class="my-skills card" style="margin-bottom: 30px;">
-        <div class="card-body">
-            <h2>私が提供できるスキル</h2>
-            @if($skills->isEmpty())
-                <p>まだスキルを登録していません。</p>
-                <a href="{{ route('skill.manage.index') }}" class="btn btn-success">新しいスキルを登録する</a>
-            @else
-                <div class="skill-grid">
-                    @foreach($skills as $skill)
-                    <div class="skill-card card">
-                        <div class="card-body">
-                            {{-- ★ここを title に変更 --}}
-                            <h3>{{ $skill->title }} ({{ $skill->category }})</h3>
-                            <p>{{ Str::limit($skill->description, 100) }}</p>
-                            <p><strong>対応可能時間:</strong> {{ $skill->available_time }}</p>
-                            <a href="{{ route('skill.detail.show', $skill->id) }}" class="btn btn-primary btn-sm">詳細を見る</a>
-                            <a href="{{ route('skill.edit', $skill->id) }}" class="btn btn-secondary btn-sm">編集</a>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
-                <div style="margin-top: 20px; text-align: center;">
-                    <a href="{{ route('skill.manage.index') }}" class="btn btn-success">新しいスキルを登録・管理する</a>
-                </div>
-            @endif
-        </div>
+    <div class="my-skills card mb-4 shadow-sm"> {{-- mb-4とshadow-smを追加して、見た目を統一 --}}
+    <div class="card-header bg-light"> {{-- ヘッダーを追加して、見出しを区切る --}}
+        <h2 class="h5 mb-0">私が提供できるスキル</h2> {{-- h2をh5にして少し小さく、mb-0で下の余白をなくす --}}
     </div>
+    <div class="card-body">
+        @if($skills->isEmpty())
+            <p class="text-muted">まだスキルを登録していません。</p>
+            <a href="{{ route('skill.manage.index') }}" class="btn btn-success mt-2">新しいスキルを登録する</a>
+        @else
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> 
+                @foreach($skills as $skill)
+                <div class="col"> 
+                  
+                    <a href="{{ route('skill.detail.show', $skill->id) }}" class="card h-100 text-decoration-none text-body skill-link">
+                        <div class="card-body">
+                            <h3 class="card-title h6 mb-2">{{ $skill->title }} ({{ $skill->category }})</h3>
+                            <p class="card-text text-muted small mb-2">{{ Str::limit($skill->description, 100) }}</p>
+
+                        </div>
+                    </a>
+                </div>
+                @endforeach
+            </div>
+            <div class="text-center mt-4"> {{-- 上余白を増やし、中央寄せ --}}
+                <a href="{{ route('skill.manage.index') }}" class="btn btn-success">新しいスキルを登録・管理する</a>
+            </div>
+        @endif
+    </div>
+</div>
 
     <div class="matching-history card">
         <div class="card-body">
             <h2>マッチング履歴</h2>
- {{-- 自分が申し込んだマッチング --}}
         <h4 class="mt-4">あなたが申し込んだマッチング</h4>
         @if($requestedMatchings->isEmpty())
             <p>あなたが申し込んだマッチングはまだありません。</p>
@@ -83,7 +84,7 @@
                             <p><strong>予定日時:</strong> {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}</p>
                             <p><strong>マッチングID:</strong> {{ $matching->id }}</p>
 
-                            {{-- レビュー内容表示ブロック (ここでは簡略化。必要に応じて前回のものを適宜組み込む) --}}
+                            {{-- レビュー内容表示ブロック --}}
                             @if($matching->status == 2)
                                 <p class="text-info">このマッチングは完了しています。</p>
                                 @if($matching->myReview)
@@ -102,7 +103,7 @@
                                 <p class="text-muted mt-3">マッチング完了後にレビューが表示されます。</p>
                             @endif
 
-                            <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" class="btn btn-primary btn-sm mt-3">メッセージを見る</a>
+                            <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" class="btn btn-primary btn-sm">メッセージを見る</a>
 
                             {{-- キャンセルボタン (自分が申し込んだ側の場合のみ) --}}
                             @if($matching->status == 0 || $matching->status == 1) {{-- 保留中または承認済みの場合にキャンセル可能 --}}
@@ -111,7 +112,7 @@
                                     <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
                                 </form>
                             @endif
-                            @if($matching->status == 1) {{-- 承認済みの場合に完了可能 --}}
+                            @if($matching->status == 1) 
                                 <form action="{{ route('matching.complete', $matching->id) }}" method="POST" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="btn btn-info btn-sm">完了する</button>
@@ -163,37 +164,127 @@
                                 <p class="text-muted mt-3">マッチング完了後にレビューが表示されます。</p>
                             @endif
 
-                            <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" class="btn btn-primary btn-sm mt-3">メッセージを見る</a>
+                            
 
-                            {{-- 承認・拒否・完了・キャンセルボタン (自分が申し込まれた側の場合) --}}
+                            <div class="d-flex align-items-center">
+    
+                            <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" class="btn btn-primary btn-sm">メッセージを見る</a>
                             @if($matching->status == 0) {{-- 保留中の場合のみ承認/拒否 --}}
-                                <form action="{{ route('matching.approve', $matching->id) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-success btn-sm">承認する</button>
-                                </form>
-                                <form action="{{ route('matching.reject', $matching->id) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-danger btn-sm">拒否する</button>
-                                </form>
+                            <form action="{{ route('matching.approve', $matching->id) }}" method="POST" class="ms-2">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm">承認する</button>
+                            </form>
+                            <form action="{{ route('matching.reject', $matching->id) }}" method="POST" class="ms-2">
+                                @csrf
+                                <button type="submit" class="btn btn-danger btn-sm">拒否する</button>
+                            </form>
                             @elseif($matching->status == 1) {{-- 承認済みの場合に完了/キャンセル --}}
-                                <form action="{{ route('matching.complete', $matching->id) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-info btn-sm">完了する</button>
-                                </form>
-                                <form action="{{ route('matching.cancel', $matching->id) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
-                                </form>
+                            <form action="{{ route('matching.complete', $matching->id) }}" method="POST" class="ms-2">
+                                @csrf
+                                <button type="submit" class="btn btn-info btn-sm">完了する</button>
+                            </form>
+                            <form action="{{ route('matching.cancel', $matching->id) }}" method="POST" class="ms-2"> 
+                                @csrf
+                                <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
+                            </form>
                             @endif
                         </div>
-                    </li>
+                    </div>
+                </li>
                 @endforeach
             </ul>
-        @endif
+            @endif
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="{{ route('matching.history.index') }}" class="btn btn-info">全マッチング履歴を見る</a>
+            </div>
+        </div>
+        
+        
+            <div class="row justify-content-center">
+                <div class="col-md-9">
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <h2 class="card-title mb-3">
+                                マッチング履歴のエクスポート
+                            </h2>
+                            <p class="card-text text-muted mb-3">
+                                期間を指定してマッチング履歴をCSV形式でエクスポートします。就職活動や学習の振り返りにご活用ください。
+                            </p>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exportHistoryModal">
+                                履歴をエクスポート
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
 
-                     <div style="text-align: center; margin-top: 20px;">
-            <a href="{{ route('matching.history.index') }}" class="btn btn-info">全マッチング履歴を見る</a>
+    {{-- ★追加: エクスポートモーダル --}}
+    <div class="modal fade" id="exportHistoryModal" tabindex="-1" aria-labelledby="exportHistoryModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exportHistoryModalLabel">マッチング履歴のエクスポート設定</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form method="POST" action="{{ route('profile.export.execute') }}">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="start_date" class="form-label">開始日 (任意):</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date">
+                        </div>
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label">終了日 (任意):</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ステータスで絞り込む (任意):</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="status_filter[]" value="0" id="statusPending" checked>
+                                <label class="form-check-label" for="statusPending">
+                                    申請中
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="status_filter[]" value="1" id="statusApproved" checked>
+                                <label class="form-check-label" for="statusApproved">
+                                    承認済み
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="status_filter[]" value="2" id="statusCompleted" checked>
+                                <label class="form-check-label" for="statusCompleted">
+                                    完了
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="status_filter[]" value="3" id="statusRejected">
+                                <label class="form-check-label" for="statusRejected">
+                                    拒否
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <button type="submit" class="btn btn-primary">エクスポート</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.skill-link {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.skill-link:hover {
+    transform: translateY(-5px); /* ホバーで少し浮き上がる */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* ホバーで影を濃くする */
+}
+</style>
+@endpush

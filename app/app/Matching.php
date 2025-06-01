@@ -110,4 +110,9 @@ class Matching extends Model
         return $this->hasOne(Review::class, 'matching_id')->where('reviewee_id', Auth::id());
     }
 
+     public function reviews()
+    {
+        return $this->hasMany(Review::class, 'matching_id');
+    }
+
 }

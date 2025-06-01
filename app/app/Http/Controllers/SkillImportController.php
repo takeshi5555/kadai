@@ -31,8 +31,6 @@ class SkillImportController extends Controller
             $data = Excel::toCollection(new SkillsImport, $request->file('skill_file'));
             $rows = $data[0];
 
-            // ★修正点：ヘッダー行スキップのロジックを、以前の条件付きに戻す
-            // 最初の行があり、かつ最初のセルの値が 'title' (大文字小文字無視) の場合のみスキップ
             if (isset($rows[0][0]) && strtolower(trim($rows[0][0])) === 'title') {
                 $rows->shift(); // Collectionのshift()メソッドで最初の要素を削除
             }
@@ -85,8 +83,7 @@ class SkillImportController extends Controller
         $userId = auth()->id();
 
         foreach ($rows as $row) {
-            // セッションに保存された $row は連想配列形式になっているので、キーでアクセス
-            // importメソッドで$rowData['title']などとして保存しているので、これで正しいです。
+
             if (!isset($row['title'], $row['category'], $row['description'])) {
                 continue;
             }

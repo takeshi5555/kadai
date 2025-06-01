@@ -128,5 +128,32 @@ class User extends Authenticatable
     {
         return in_array($this->role, $roles);
     }
+ 
+    public function reviewsReceived()
+    {
+        return $this->hasMany(Review::class, 'reviewee_id');
+    }
+
+    // このユーザーがreviewer_idとして書いたレビュー
+    public function reviewsWritten()
+    {
+        return $this->hasMany(Review::class, 'reviewer_id');
+    }
+    
+
+    // Receiving側
+    public function receivedMatchings()
+    {
+        return $this->hasManyThrough(Matching::class, Skill::class, 'user_id', 'receiving_skill_id', 'id', 'id');
+    }
+
+
+
+    public function getAverageRatingReceivedAttribute()
+{
+    return $this->reviewsReceived()->avg('rating');
+    
     
 }
+}
+

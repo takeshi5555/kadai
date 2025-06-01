@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Admin\SkillsController;
 use App\Http\Controllers\Admin\ReportsController;
 use Illuminate\Http\Request;
+use App\Http\Controllers\ExportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,7 +63,7 @@ Route::get('/password/complete', [AuthController::class, 'showPwdComplete'])->na
 Route::get('/main', [MainController::class, 'index'])->name('main.index'); // `main` だった名前を `main.index` に変更（好みによる）
 
 // Skill Search & Detail (スキル検索・詳細)
-Route::get('/skill/search', [SkillController::class, 'index'])->name('skill.search.index'); // 名前を追加
+Route::get('/skill/search', [SkillController::class, 'search'])->name('skill.search');
 Route::get('/skill/detail/{id}', [SkillController::class, 'show'])->name('skill.detail.show'); // 名前を追加
 
 // Authenticated Routes (認証済みユーザーのみアクセス可能)
@@ -109,6 +110,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/message/{matchingId}', [MessageController::class, 'show'])->name('message.show');
     Route::post('/message/{matchingId}', [MessageController::class, 'store'])->name('message.store');
 
+     // ★追加: マッチング履歴のエクスポート
+    Route::get('/profile/export-matching-history', [ExportController::class, 'showExportForm'])->name('profile.export.form');
+    Route::post('/profile/export-matching-history', [ExportController::class, 'exportMatchingHistory'])->name('profile.export.execute');
 
     //reports
     Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');

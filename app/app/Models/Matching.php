@@ -120,5 +120,9 @@ class Matching extends Model
             default: return '不明';
         }
     }
+     public function reviews()
+    {
+        return $this->hasMany(Review::class, 'matching_id');
+    }
 
 }

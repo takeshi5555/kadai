@@ -1,10 +1,10 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Skill;
-use App\Matching;
-use App\Review;
-use App\User;
+use App\Models\Skill;
+use App\Models\Matching;
+use App\Models\Review;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
@@ -17,18 +17,43 @@ use Google\Service\Calendar;
 
 class MatchingController extends Controller
 {
-    public function apply($skillId)
-{
-    $targetSkill = Skill::findOrFail($skillId);
+    public function apply($targetSkillId)
+    {
+        // 相手のスキル情報を取得
+        $targetSkill = Skill::with('user')->findOrFail($targetSkillId);
 
-    // 自分のスキル一覧を取得
-    $mySkills = Skill::where('user_id', Auth::id())->get();
+        // ログイン中のユーザーのスキルを取得
+        $mySkills = Auth::user()->skills; // UserモデルにhasMany('Skill')リレーションが必要
 
-    return view('matching.matching_apply', [
-        'targetSkill' => $targetSkill,
-        'mySkills' => $mySkills,
-    ]);
-}
+        // --- 相手のスキル提供者（ユーザー）の情報 ---
+        $targetUser = $targetSkill->user; // 相手のスキル提供者のユーザー情報
+
+        // 提供者の全マッチング件数 (提供・受領の両方)
+        $targetUserTotalOfferedMatchingsCount = $targetUser->offeredMatchings()->whereIn('status', [1, 2])->count();
+        $targetUserTotalReceivedMatchingsCount = $targetUser->receivedMatchings()->whereIn('status', [1, 2])->count();
+        $targetUserTotalMatchingCount = $targetUserTotalOfferedMatchingsCount + $targetUserTotalReceivedMatchingsCount;
+
+        // 提供者の全レビューの評価平均 (reviewee_id がこのユーザーであるレビューの平均)
+        $targetUserAverageRating = $targetUser->reviewsReceived()->avg('rating');
+
+        // 提供者に対する最新レビュー (reviewee_id がこのユーザーであるレビューの最新3件)
+        $targetUserLatestReviews = $targetUser->reviewsReceived()->latest()->limit(3)->get();
+
+
+        return view('matching.matching_apply', [ 
+            'targetSkill' => $targetSkill,
+            'mySkills' => $mySkills,
+            'targetUserTotalMatchingCount' => $targetUserTotalMatchingCount,
+            'targetUserAverageRating' => $targetUserAverageRating,
+            'targetUserLatestReviews' => $targetUserLatestReviews,
+        ]);
+    }
+
+
+
+
+
+
     public function confirm(Request $request)
 {
     $request->validate([
