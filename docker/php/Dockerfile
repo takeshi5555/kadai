@@ -20,13 +20,22 @@ RUN apt-get update && \
     && rm -rf /var/lib/apt/lists/*
 
 # PHP 拡張機能をインストール
-RUN docker-php-ext-install pdo_mysql gd zip
-
+RUN docker-php-ext-install pdo_mysql gd zip && \
+    docker-php-ext-enable gd
 # PECL 経由で Redis 拡張をインストール
 RUN pecl install redis \
     && docker-php-ext-enable redis \
     && rm -rf /tmp/pear
 
 # Node.js 16.x のインストール
-RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - && \
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash - && \
     apt-get install -y nodejs
+
+WORKDIR /var/www/html
+
+# composer.json だけをコピー（composer.lock は一旦無視）
+COPY app/composer.json ./
+# composer install はDockerfileでは実行せず、後で手動で実行する
+
+# 残りのアプリケーションファイルをコピー
+COPY app .

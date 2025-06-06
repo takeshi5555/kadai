@@ -25,12 +25,14 @@ services:
     volumes:
       - ./app:/var/www/html
       - ./docker/php/check_startup.sh:/tmp/check_startup.sh
+      - ./docker/php/conf/custom.ini:/usr/local/etc/php/conf.d/custom.ini
     expose:
       - "9000"
     depends_on:
       - db
       - redis
     environment:
+      PHP_INI_SET: "display_errors=Off"
       REDIS_HOST: redis
       REDIS_PORT: 6379
       # --- ここを修正 ---
@@ -92,7 +94,7 @@ services:
       context: .
       dockerfile: docker/echo-server/Dockerfile
     # --- ここを修正 ---
-    command: laravel-echo-server start # ★ npm install && を削除★
+    command: laravel-echo-server start --no-daemon --force --debug --host=0.0.0.0 --port=6001 --authHost=http://nginx:80 --redisHost=redis --redisPort=6379 --config=/var/www/html/laravel-echo-server.json
     volumes:
       - ./app:/var/www/html
       # - /var/www/html/node_modules # ★この行を削除またはコメントアウト★

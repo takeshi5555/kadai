@@ -1,13 +1,16 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Carbon;
 use App\Models\Skill;
 use App\Models\Matching;
 use App\Models\Message;
 use App\Models\User;
+use App\Models\UserWarning;
+use App\Models\Report;
+use App\Models\ReportReason;
 
 class MypageController extends Controller
 {
@@ -18,13 +21,26 @@ class MypageController extends Controller
         // ユーザーが登録したスキル
         $skills = $user->skills;
 
-        // ユーザーが関わる全てのマッチング履歴を取得
-        // ユーザーが提供するスキルが関わるマッチング
+        // ... マッチング履歴と未読メッセージの取得ロジックはそのまま ...
         $offeredSkillIds = $user->skills->pluck('id')->toArray();
-        $offeredMatchings = collect(); // 空のコレクションで初期化
+        $offeredMatchings = collect();
 
         if (!empty($offeredSkillIds)) {
             $offeredMatchings = Matching::whereIn('offering_skill_id', $offeredSkillIds)
+                                         ->with([
+                                             'offeringSkill',
+                                             'receivingSkill',
+                                             'offerUser',
+                                             'requestUser',
+                                             'myReview',
+                                             'reviewFromPartner'
+                                         ])
+                                         ->get();
+        }
+
+        $requestedMatchings = Matching::whereHas('requestUser', function ($query) use ($user) {
+                                                $query->where('users.id', $user->id);
+                                            })
                                         ->with([
                                             'offeringSkill',
                                             'receivingSkill',
@@ -34,45 +50,61 @@ class MypageController extends Controller
                                             'reviewFromPartner'
                                         ])
                                         ->get();
-        }
 
-
-        // ユーザーがリクエストするスキルが関わるマッチング
-        // ここでは、ユーザーが持つスキルの中から、リクエスト側として関わるスキルを探す
-        // 実際には、ユーザーがリクエストした（相手の）スキルに対するマッチングを取得する必要があるため、
-        // より複雑なクエリが必要になる場合があります。
-        // 例えば、ユーザーがリクエストしたスキルIDのリストを取得し、それを使ってマッチングを検索する、など。
-        // 現在のモデルでは、`requestUser`リレーションが定義されているため、そちらを利用して取得します。
-        $requestedMatchings = Matching::whereHas('requestUser', function ($query) use ($user) {
-                                            $query->where('users.id', $user->id);
-                                        })
-                                    ->with([
-                                        'offeringSkill',
-                                        'receivingSkill',
-                                        'offerUser',
-                                        'requestUser',
-                                        'myReview',
-                                        'reviewFromPartner'
-                                    ])
-                                    ->get();
-
-                                    
-        // 両方のコレクションを結合し、重複を排除して最新のものからソート
-         $offeredMatchings->each(function ($matching) {
+        $offeredMatchings->each(function ($matching) {
             $matching->statusText = $this->getMatchingStatusText($matching->status);
         });
         $requestedMatchings->each(function ($matching) {
             $matching->statusText = $this->getMatchingStatusText($matching->status);
         });
 
-        // 未読メッセージのカウント
         $unreadMessagesCount = $user->receivedMessages()->whereNull('read_at')->count();
 
-        return view('mypage.index', compact('user', 'skills', 'offeredMatchings', // 自分が提供したスキル関連のマッチング
-            'requestedMatchings', 'unreadMessagesCount'));
+
+        // ★★★ ここを修正/追加：未確認の警告と確認済みの警告を分けて取得 ★★★
+        $unreadWarnings = $user->warnings()
+                               ->whereNull('read_at') // read_at が NULL のもの（未確認）
+                               ->with(['report.reason', 'report.subReason'])
+                               ->orderBy('created_at', 'desc')
+                               ->get();
+
+        $readWarnings = $user->warnings()
+                             ->whereNotNull('read_at') // read_at が NULL ではないもの（確認済み）
+                             ->with(['report.reason', 'report.subReason'])
+                             ->orderBy('read_at', 'desc') // 確認された日時でソート
+                             ->get();
+
+
+
+        return view('mypage.index', compact(
+            'user',
+            'skills',
+            'offeredMatchings',
+            'requestedMatchings',
+            'unreadMessagesCount',
+            'unreadWarnings', // ★追加：未確認の警告
+            'readWarnings'    // ★追加：確認済みの警告
+
+        ));
     }
 
-     private function getMatchingStatusText($status)
+    // ★★★ ここから追加：警告を「確認済み」にするメソッド ★★★
+    public function markWarningAsRead(UserWarning $warning)
+    {
+        // ログイン中のユーザーが、この警告の対象ユーザーであることを確認
+        if (Auth::id() !== $warning->user_id) {
+            abort(403, 'Unauthorized action.'); // 許可されていない操作
+        }
+
+        // read_at を現在時刻に設定して保存
+        $warning->read_at = Carbon::now();
+        $warning->save();
+
+        return redirect()->back()->with('success', '警告を確認済みにしました。');
+    }
+    // ★★★ ここまで追加 ★★★
+
+    private function getMatchingStatusText($status)
     {
         switch ($status) {
             case 0: return '保留中';

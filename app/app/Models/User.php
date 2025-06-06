@@ -17,7 +17,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password','role','is_banned',
+        'name', 'email', 'password','role','is_banned','google_id','remember_token',
     ];
 
     /**
@@ -146,8 +146,16 @@ class User extends Authenticatable
     {
         return $this->hasManyThrough(Matching::class, Skill::class, 'user_id', 'receiving_skill_id', 'id', 'id');
     }
-
-
+    public function receivedReports()
+    {
+        // reported_user_id は、reportsテーブルで通報を受けたユーザーのIDを示すカラム
+        return $this->hasMany(Report::class, 'reported_user_id');
+    }
+    public function warnings()
+    {
+        // user_id は、user_warningsテーブルで警告を受けたユーザーのIDを示すカラム
+        return $this->hasMany(UserWarning::class, 'user_id');
+    }
 
     public function getAverageRatingReceivedAttribute()
 {

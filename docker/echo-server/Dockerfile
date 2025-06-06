@@ -21,4 +21,4 @@ COPY app .
 EXPOSE 6001
 
 # コンテナ起動時のデフォルトコマンド (docker-compose.yml で上書きされるが、念のため)
-CMD ["laravel-echo-server", "start"]
+CMD ["laravel-echo-server", "start","--no-daemon"]

@@ -36,6 +36,7 @@
                 </form>
             </div>
         </div>
+
         
         <h2 class="mb-3">検索結果</h2>
         @if ($skills->isEmpty())
@@ -49,8 +50,8 @@
                         <div>
                             <h5 class="mb-1">{{ $skill->title }}</h5>
                             <small class="text-muted">{{ $skill->category }}</small>
-                            {{-- $skill->user->name など、関連するユーザー名も表示すると良いでしょう --}}
                             <p class="mb-1">提供者: {{ $skill->user->name ?? '不明' }}</p>
+                            <p class="text-secondary small mb-0">{{ Str::limit($skill->description, 150) }}</p>
                         </div>
                         <i class="bi bi-chevron-right"></i>
                     </a>

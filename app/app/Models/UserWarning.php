@@ -16,8 +16,10 @@ class UserWarning extends Model
         'message',
         'type',
         'warned_at',
+        'read_at'
     ];
 
+    protected $dates = ['warned_at','read_at'];
     /**
      * 警告を受けたユーザーを取得
      */

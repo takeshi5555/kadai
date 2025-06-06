@@ -3,15 +3,15 @@
     "authEndpoint": "/broadcasting/auth",
     "clients": [
         {
-            "appId": "${APP_KEY}",
-            "key": "${APP_KEY}"  
+            "appId": "123456",
+            "key": "base64:UUSxtpswBnFt00y9aiz7Kf7RdSYLLzIIPoGshh01jUU="  
         }
     ],
     "channels": {
         "private": ["matching.*"] 
     },
     "devMode": true, 
-    "host": null,    
+    "host": "0.0.0.0",    
     "port": "6001",  
     "protocol": "ws",
     "server": "http", 

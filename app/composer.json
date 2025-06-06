@@ -8,8 +8,10 @@
         "php": "^7.3|^8.0",
         "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
+        "laravel-notification-channels/webpush": "^6.0",
         "laravel/framework": "^8.75",
         "laravel/sanctum": "^2.11",
+        "laravel/socialite": "*",
         "laravel/tinker": "^2.5",
         "maatwebsite/excel": "^3.1.18",
         "pusher/pusher-php-server": "*"
@@ -57,7 +59,8 @@
     "config": {
         "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "process-timeout": 1200
     },
     "minimum-stability": "dev",
     "prefer-stable": true

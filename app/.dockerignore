@@ -1,0 +1,27 @@
+# Git関連のファイル
+.git
+.gitignore
+
+# PHP関連
+vendor/
+.env
+
+# Node.js関連
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Docker関連
+.dockerignore
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+
+# データベースソケットファイルなど、一時ファイル
+*.sock
+*.sqlite
+
+# その他のログや一時ファイル
+storage/*.log
+*.log
+.vscode/

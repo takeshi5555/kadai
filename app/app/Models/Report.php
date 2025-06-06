@@ -43,4 +43,8 @@ public function reportedUser()
 {
     return $this->belongsTo(User::class, 'reported_user_id');
 }
+public function reportable()
+    {
+        return $this->morphTo();
+    }
 }

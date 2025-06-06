@@ -19,7 +19,8 @@ use App\Http\Controllers\Admin\SkillsController;
 use App\Http\Controllers\Admin\ReportsController;
 use Illuminate\Http\Request;
 use App\Http\Controllers\ExportController;
-
+use Laravel\Socialite\Facades\Socialite;
+use App\Models\User;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -58,6 +59,9 @@ Route::get('/password/form', [AuthController::class, 'showPwdForm'])->name('pass
 Route::post('/password/form', [AuthController::class, 'resetPassword'])->name('password.update'); // Laravelのデフォルト名に寄せる
 Route::get('/password/complete', [AuthController::class, 'showPwdComplete'])->name('password.complete');
 
+Route::post('/warning/{warning}/mark-as-read', [MypageController::class, 'markWarningAsRead'])
+     ->name('warning.mark_as_read')
+     ->middleware('auth'); 
 
 // Main Page (メインページ)
 Route::get('/main', [MainController::class, 'index'])->name('main.index'); // `main` だった名前を `main.index` に変更（好みによる）
@@ -89,9 +93,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/matching/apply/confirm', [MatchingController::class, 'confirm'])->name('matching.apply.confirm'); // 名前を追加
     Route::post('/matching/apply/execute', [MatchingController::class, 'store'])->name('matching.apply.store'); // 名前を追加
 
-    // Google Calendar Integration (Googleカレンダー連携)
-    Route::get('google/auth', [GoogleCalendarController::class, 'redirectToGoogle'])->name('google.auth');
-    Route::get('google/callback', [GoogleCalendarController::class, 'handleGoogleCallback'])->name('google.callback');
+
 
     // Matching History & Actions (マッチング履歴・承認・拒否・完了・キャンセル)
     Route::get('/matching/history', [MatchingController::class, 'history'])->name('matching.history.index'); // 名前を追加
@@ -147,3 +149,40 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
 });
 
+// Google認証ページへのリダイレクト
+Route::get('/auth/google/redirect', function () {
+    return Socialite::driver('google')->redirect();
+})->name('google.redirect');
+
+// Googleからのコールバック
+Route::get('/auth/google/callback', function () {
+    try {
+        $googleUser = Socialite::driver('google')->user();
+    } catch (\Exception $e) {
+        // エラーメッセージを一時的に表示する
+        dd($e);
+        // return redirect('/login')->with('error', 'Google認証に失敗しました。'); // この行はコメントアウトまたは削除
+    }
+
+    // メールアドレスでユーザーを検索または新規作成
+    $user = User::firstOrCreate(
+        ['email' => $googleUser->getEmail()],
+        [
+            'name' => $googleUser->getName(),
+            'password' => bcrypt(Str::random(16)), // ランダムなパスワードを生成
+            'google_id' => $googleUser->getId(), // Google IDを保存
+            // 必要に応じて他のユーザー情報も保存
+        ]
+    );
+
+    // ユーザーがGoogle IDを持っていなければ更新
+    if (is_null($user->google_id)) {
+        $user->google_id = $googleUser->getId();
+        $user->save();
+    }
+
+    // ログイン処理
+    Auth::login($user, true); // trueでremember me
+
+    return redirect('/main'); // ログイン後のリダイレクト先
+});

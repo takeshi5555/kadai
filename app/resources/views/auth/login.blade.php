@@ -53,6 +53,9 @@
                     <div class="text-center mt-4">
                         <a href="{{ url('/password/reset') }}" class="text-decoration-none">パスワードを忘れた方</a>
                     </div>
+                    <a href="{{ route('google.redirect') }}" class="btn btn-danger">
+    Googleでログイン
+</a>
                     <div class="text-center mt-2">
                         <a href="{{ url('/signup') }}" class="text-decoration-none">新規登録はこちら</a>
                     </div>
