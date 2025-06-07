@@ -1,128 +1,149 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container">
-        <h1>メインページ</h1>
-        <h2>スキルシェアサービスへようこそ！</h2>
+@php use Illuminate\Support\Str; @endphp {{-- Str::limit を使うため、ここでuse宣言 --}}
 
-        {{-- --- ここからボタンを追加 --- --}}
-        <div class="main-cta-buttons">
-            <a href="{{ url('/skill/search') }}" class="btn btn-primary">スキルを探す</a>
+<div class="container py-5"> {{-- 全体的な上下のパディングを大きく --}}
+    <h1 class="text-center mb-3">SkillSwap</h1> {{-- タイトルを中央寄せに --}}
+    <p class="lead text-center mb-5">スキルシェアサービスへようこそ！</p> {{-- リード文として少し大きく、中央寄せに --}}
 
-            @guest
-                {{-- ログアウト中のユーザーにのみ表示 --}}
-                <a href="{{ url('/signup') }}" class="btn btn-secondary">新規登録はこちら</a>
-            @else
-                {{-- ログイン中のユーザーにのみ表示 --}}
-                <a href="{{ url('/skill/manage') }}" class="btn btn-success">スキルを教える</a>
-            @endguest
-        </div>
-        {{-- --- ここまでボタンを追加 --- --}}
+    {{-- --- 主要CTAボタン --- --}}
+    <div class="d-grid gap-3 col-md-8 col-lg-6 mx-auto mb-5"> {{-- ボタンを中央に配置し、適切な幅に --}}
+        <a href="{{ url('/skill/search') }}" class="btn btn-primary btn-lg">スキルを探す</a>
 
-
-        <h3>おすすめカテゴリ</h3>
-        @if($categories->isEmpty())
-            <p>カテゴリはまだ登録されていません。</p>
+        @guest
+            <a href="{{ url('/signup') }}" class="btn btn-outline-secondary btn-lg">新規登録はこちら</a>
         @else
-            <div class="category-list"> {{-- 新しいCSSクラスを追加 --}}
+            <a href="{{ url('/skill/manage') }}" class="btn btn-success btn-lg">スキルを教える</a>
+        @endguest
+    </div>
+    {{-- --- 主要CTAボタンここまで --- --}}
+
+    <hr class="my-5"> {{-- セクション間の明確な区切り --}}
+
+       <section class="mb-5 text-center bg-light p-5 rounded">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+                <h2 class="mb-4 display-5 fw-bold">SkillSwapで、あなたの世界を広げよう。</h2>
+                <p class="lead mb-4">SkillSwapは、あなたが持っているスキルを他の誰かに教えたり、逆に学びたいスキルを持つ人から学ぶことができる、スキルシェアサービスです。</p>
+                <div class="row mt-4">
+                    <div class="col-md-4 mb-3">
+                        <i class="bi bi-person-check fs-2 text-primary"></i> {{-- Bootstrap Icons を使う場合 --}}
+                        <h4 class="mt-2">簡単登録</h4>
+                        <p class="text-muted">数ステップであなたのスキルを登録できます。</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <i class="bi bi-book fs-2 text-success"></i>
+                        <h4 class="mt-2">多様なスキル</h4>
+                        <p class="text-muted">プログラミングから料理まで、あらゆるスキルが集まります。</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <i class="bi bi-hand-thumbs-up fs-2 text-info"></i>
+                        <h4 class="mt-2">安心サポート</h4>
+                        <p class="text-muted">安全なマッチングとサポート体制で安心。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- --- おすすめカテゴリ --- --}}
+    <section class="mb-5">
+        <h2 class="text-center mb-4">おすすめカテゴリ</h2>
+        @if($categories->isEmpty())
+            <p class="text-center text-muted">カテゴリはまだ登録されていません。</p>
+        @else
+            <div class="d-flex flex-wrap justify-content-center gap-3"> {{-- カテゴリをフレックスボックスで中央寄せに --}}
                 @foreach($categories as $category)
-                    <a href="{{ url('/skill/search?category=' . urlencode($category)) }}" class="category-item"> {{-- ★カテゴリ検索へのリンク --}}
+                    <a href="{{ url('/skill/search?category=' . urlencode($category)) }}" class="btn btn-outline-info text-nowrap"> {{-- ボタン風のカテゴリ表示 --}}
                         {{ $category }}
                     </a>
                 @endforeach
             </div>
         @endif
+    </section>
+    {{-- --- おすすめカテゴリここまで --- --}}
 
+    <hr class="my-5">
 
-        <h2 class="mt-4">新着スキル</h2>
+    {{-- --- 新着スキル --- --}}
+    <section class="mb-5">
+        <h2 class="text-center mb-4">新着スキル</h2>
         @if($newSkills->isEmpty())
-            <p>新着スキルはまだありません。</p>
+            <p class="text-center text-muted">新着スキルはまだありません。</p>
         @else
-            <div class="skill-grid">
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {{-- レスポンシブなグリッドレイアウト --}}
                 @foreach($newSkills as $skill)
-                    {{-- ★ここを修正: skill-card 全体をリンク化し、内部の btn-primary を削除 --}}
-                    <a href="{{ url('/skill/detail/' . $skill->id) }}" class="skill-card-link"> {{-- 新しいクラス `skill-card-link` を追加し、全体をリンクにする --}}
-                        <div class="skill-card">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h3 class="card-title">{{ $skill->title }}</h3>
-                                    <p class="card-text">
-                                        <strong>カテゴリ:</strong> {{ $skill->category }}<br>
-                                        <strong>提供者:</strong> {{ $skill->user->name ?? '不明なユーザー' }}
-                                    </p>
-                                    <p class="card-text">{{ Str::limit($skill->description, 100) }}</p>
-                                    {{-- ★削除: 元の「詳細を見る」ボタン --}}
-                                    {{-- <a href="{{ url('/skill/detail/' . $skill->id) }}" class="btn btn-primary">詳細を見る</a> --}}
-                                </div>
+                    <div class="col">
+                        <a href="{{ url('/skill/detail/' . $skill->id) }}" class="card h-100 shadow-sm text-decoration-none text-body skill-card-link"> {{-- カード全体をリンクに --}}
+                            <div class="card-body">
+                                <h3 class="card-title h5 mb-2">{{ $skill->title }}</h3> {{-- タイトルサイズを調整 --}}
+                                <p class="card-text small text-muted mb-2">
+                                    <strong>カテゴリ:</strong> {{ $skill->category }}<br>
+                                    <strong>提供者:</strong> {{ $skill->user->name ?? '不明なユーザー' }}
+                                </p>
+                                <p class="card-text mb-0">{{ Str::limit($skill->description, 100) }}</p> {{-- 説明文の表示 --}}
                             </div>
-                        </div>
-                    </a>
+                        </a>
+                    </div>
                 @endforeach
             </div>
         @endif
+    </section>
+    {{-- --- 新着スキルここまで --- --}}
 
+    <hr class="my-5">
 
-        <h2 class="mt-5">おすすめレビュー</h2>
+    {{-- --- おすすめレビュー --- --}}
+    <section class="mb-5">
+        <h2 class="text-center mb-4">おすすめレビュー</h2>
         @if($featuredReviews->isEmpty())
-            <p>まだレビューがありません。</p>
+            <p class="text-center text-muted">まだレビューがありません。</p>
         @else
-            <div class="featured-reviews">
+            <div class="row row-cols-1 row-cols-md-2 g-4"> {{-- レビューもグリッドレイアウトで --}}
                 @foreach($featuredReviews as $review)
-                    <div class="review-card">
-                        <p class="skill-offered-info">
-                            <strong>提供スキル：</strong>
-                            <span class="skill-name-highlight">
-                                {{ $review->matching->offeringSkill->title ?? '不明なスキル' }}
-                            </span>
-                        </p>
-                        <p class="review-text">"{{ $review->comment }}"</p>
-                        <div class="review-details">
-                            <p class="review-author">
-                                {{ $review->reviewer->name ?? '不明なレビュアー' }} さんから
-                                {{ $review->reviewee->name ?? '不明な提供者' }} さんへ
-                                - 評価: {{ $review->rating }}
-                            </p>
+                    <div class="col">
+                        <div class="card h-100 shadow-sm review-card"> {{-- レビューカードのデザイン --}}
+                            <div class="card-body">
+                                <p class="card-text text-info mb-1">
+                                    <strong>提供スキル：</strong>
+                                    <span class="fw-bold">{{ $review->matching->offeringSkill->title ?? '不明なスキル' }}</span>
+                                </p>
+                                <p class="card-text fs-5 fw-bold mb-3">"{{ $review->comment }}"</p> {{-- コメントを強調 --}}
+                                <div class="text-end">
+                                    <p class="card-text text-muted small mb-0">
+                                        {{ $review->reviewer->name ?? '不明なレビュアー' }} さんから
+                                        {{ $review->reviewee->name ?? '不明な提供者' }} さんへ
+                                    </p>
+                                    <p class="card-text text-muted small">
+                                        評価: <span class="fw-bold text-warning">{{ $review->rating }}</span>
+                                        {{-- ここに星アイコンなどを追加するとより見栄えが良いです --}}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 @endforeach
             </div>
         @endif
-    </div>
-@endsection
+    </section>
+    {{-- --- おすすめレビューここまで --- --}}
 
+</div>
+@endsection
 
 @push('styles')
 <style>
+/* カスタムCSS（public/css/app.css に追加すると良い） */
+
+
 .skill-card-link {
-    text-decoration: none; /* 下線を削除 */
-    color: inherit; /* テキストの色を親要素から継承 */
-    display: block; /* aタグをブロック要素にして、全体がクリック可能に */
-    height: 100%; /* 親要素に高さが指定されている場合に、子要素がそれを継承 */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
 }
-
-.skill-card-link .skill-card .card {
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; /* ホバー時のアニメーション */
+.skill-card-link:hover {
+    transform: translateY(-8px); /* ホバーで少し浮き上がる */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7); /* ホバーで影を濃くする */
 }
-
-.skill-card-link:hover .skill-card .card {
-    transform: translateY(-5px); /* 少し上に移動 */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* 影を強調 */
-    cursor: pointer; /* カーソルをポインターにする */
-}
-
-/* 既存の skill-grid と skill-card のスタイルも調整して、見た目を整えると良いでしょう */
-.skill-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); /* カードの最小幅と最大幅を調整 */
-    gap: 20px; /* カード間のスペース */
-}
-
-.skill-card {
-    /* リンクの高さに合わせてカードの高さも調整 */
-    height: 100%;
-}
-
-
 
 
 </style>

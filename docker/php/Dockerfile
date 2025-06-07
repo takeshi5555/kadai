@@ -19,6 +19,9 @@ RUN apt-get update && \
     libzip-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# OPcacheを有効化
+RUN docker-php-ext-install opcache
+
 # PHP 拡張機能をインストール
 RUN docker-php-ext-install pdo_mysql gd zip && \
     docker-php-ext-enable gd

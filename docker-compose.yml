@@ -5,13 +5,16 @@ services:
     container_name: curriculum-nginx
     image: nginx:latest
     volumes:
-      - ./docker/nginx:/etc/nginx/conf.d
-      - ./app:/var/www/html
+      - ./docker/nginx:/etc/nginx/conf.d:cached
+      - ./app:/var/www/html:cached
+      # 静的ファイルは別ボリュームで高速化
+      - app_vendor:/var/www/html/vendor
+      - app_node_modules:/var/www/html/node_modules
     ports:
       - "80:80"
     depends_on:
       - php
-      - echo-server # Nginx が Echo Server に依存するように追加
+      - echo-server
 
   php:
     container_name: curriculum-laravel
@@ -23,9 +26,17 @@ services:
       context: ./
       dockerfile: docker/php/Dockerfile
     volumes:
-      - ./app:/var/www/html
-      - ./docker/php/check_startup.sh:/tmp/check_startup.sh
-      - ./docker/php/conf/custom.ini:/usr/local/etc/php/conf.d/custom.ini
+      # メインのアプリケーションコード（cached で高速化）
+      - ./app:/var/www/html:cached
+      # 重いディレクトリは別ボリュームに分離
+      - app_vendor:/var/www/html/vendor
+      - app_node_modules:/var/www/html/node_modules
+      # 一時ファイルとキャッシュも分離
+      - app_storage:/var/www/html/storage
+      - app_bootstrap_cache:/var/www/html/bootstrap/cache
+      # 設定ファイル
+      - ./docker/php/check_startup.sh:/tmp/check_startup.sh:cached
+      - ./docker/php/conf/custom.ini:/usr/local/etc/php/conf.d/custom.ini:cached
     expose:
       - "9000"
     depends_on:
@@ -58,7 +69,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       TZ: 'Asia/Tokyo'
     volumes:
-      - ./db:/var/lib/mysql
+      - db_data:/var/lib/mysql
     restart: always
     ports:
       - 3306:3306
@@ -75,7 +86,7 @@ services:
     ports:
       - 4040:80
     volumes:
-      - ./phpmyadmin/sessions:/sessions
+      - phpmyadmin_sessions:/sessions
 
   # Redis サービス (そのまま)
   redis:
@@ -96,8 +107,8 @@ services:
     # --- ここを修正 ---
     command: laravel-echo-server start --no-daemon --force --debug --host=0.0.0.0 --port=6001 --authHost=http://nginx:80 --redisHost=redis --redisPort=6379 --config=/var/www/html/laravel-echo-server.json
     volumes:
-      - ./app:/var/www/html
-      # - /var/www/html/node_modules # ★この行を削除またはコメントアウト★
+      - ./app:/var/www/html:cached
+      - app_node_modules:/var/www/html/node_modules
     # --- 修正ここまで ---
     ports:
       - "6001:6001"
@@ -113,3 +124,9 @@ services:
 volumes:
   db_data:
   redis_data:
+  # 新しく追加したボリューム
+  app_vendor:
+  app_node_modules:
+  app_storage:
+  app_bootstrap_cache:
+  phpmyadmin_sessions:

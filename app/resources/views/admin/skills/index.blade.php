@@ -40,11 +40,59 @@
                 <table class="table table-hover table-striped">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            {{-- ID列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    ID
+                                    <a href="{{ route('admin.skills.index', array_merge(request()->query(), ['sort' => 'id', 'direction' => (request('sort') == 'id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650; 
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
                             <th>タイトル</th>
                             <th>説明</th>
-                            <th>所有者</th>
-                            <th>登録日</th>
+                            {{-- 所有者列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    所有者
+                                    <a href="{{ route('admin.skills.index', array_merge(request()->query(), ['sort' => 'user_id', 'direction' => (request('sort') == 'user_id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'user_id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
+                            {{-- 登録日列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    登録日
+                                    <a href="{{ route('admin.skills.index', array_merge(request()->query(), ['sort' => 'created_at', 'direction' => (request('sort') == 'created_at' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'created_at')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
                             <th>アクション</th>
                         </tr>
                     </thead>
