@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
@@ -108,6 +109,8 @@ class User extends Authenticatable
     }
 
 
+    
+
     // ユーザーのロールをチェックするヘルパーメソッド (推奨)
     public function isAdmin(): bool
     {
@@ -141,6 +144,7 @@ class User extends Authenticatable
     }
     
 
+
     // Receiving側
     public function receivedMatchings()
     {
@@ -160,8 +164,6 @@ class User extends Authenticatable
     public function getAverageRatingReceivedAttribute()
 {
     return $this->reviewsReceived()->avg('rating');
-    
-    
 }
 }
 

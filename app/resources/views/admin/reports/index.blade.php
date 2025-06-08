@@ -89,7 +89,7 @@
                                     {{-- アクションボタンのグループ --}}
                                     <div class="btn-group" role="group" aria-label="Report Actions">
                                         {{-- ユーザーBANボタン (通報対象がユーザーの場合のみ) --}}
-                                       @if ($report->reportedUser) {{-- ★ここを変更: reportedUserの存在チェックに変更 --}}
+                                       @if ($report->reportedUser)
                                             <button type="button" class="btn btn-sm btn-danger ban-user-btn me-1"
                                                     data-bs-toggle="modal" data-bs-target="#banUserModal"
                                                     data-report-id="{{ $report->id }}"
@@ -115,15 +115,6 @@
                                             確認済みにする
                                         </button>
                                     </div>
-                                    {{-- ここに通報対象コンテンツの削除ボタンなど（任意） --}}
-                                    {{-- 例: スキル削除ボタン (通報対象がスキルの場合のみ)
-                                    @if ($report->reportable_type === 'App\Models\Skill' && $report->reportable)
-                                        <form action="{{ route('admin.skills.destroy', $report->reportable) }}" method="POST" class="d-inline-block" onsubmit="return confirm('本当にこのスキルを削除しますか？');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">スキル削除</button>
-                                        </form>
-                                    @endif --}}
                                 </td>
                             </tr>
                         @empty
@@ -155,21 +146,18 @@
             </div>
             <form id="banUserForm" method="POST">
                 @csrf
-                @method('PUT') {{-- または PATCH --}}
+                @method('PUT')
                 <div class="modal-body">
-                    <p>ユーザー <strong id="banUserName"></strong> のBAN状態を変更します。</p>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="isBannedSwitch" name="is_banned">
-                        <label class="form-check-label" for="isBannedSwitch">このユーザーをBANする</label>
-                    </div>
-                    <div class="mb-3 mt-3">
+                    <p id="banActionDescription">ユーザー <strong id="banUserName"></strong> のBAN状態を変更します。</p>
+                    <input type="hidden" id="isBannedHidden" name="is_banned" value="">
+                    <div class="mb-3">
                         <label for="banReason" class="form-label">BAN理由 (任意)</label>
                         <textarea class="form-control" id="banReason" name="ban_reason" rows="3"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                    <button type="submit" class="btn btn-danger">適用</button>
+                    <button type="submit" class="btn btn-danger" id="banSubmitButton">適用</button>
                 </div>
             </form>
         </div>
@@ -209,7 +197,7 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // ユーザーBANモーダル処理 (変更なし)
+    // ユーザーBANモーダル処理
     const banUserModal = document.getElementById('banUserModal');
     const banUserForm = document.getElementById('banUserForm'); 
 
@@ -220,14 +208,34 @@ document.addEventListener('DOMContentLoaded', function () {
         const userName = button.getAttribute('data-user-name');
         const isBanned = button.getAttribute('data-is-banned') === '1';
 
+        // モーダル内の要素を取得
         const userNameElem = banUserModal.querySelector('#banUserName');
-        const isBannedSwitch = banUserModal.querySelector('#isBannedSwitch');
+        const isBannedHidden = banUserModal.querySelector('#isBannedHidden');
+        const banActionDescription = banUserModal.querySelector('#banActionDescription');
+        const banSubmitButton = banUserModal.querySelector('#banSubmitButton');
 
+        // ユーザー名を設定
         userNameElem.textContent = userName;
-        isBannedSwitch.checked = isBanned;
         
+        // 現在のBAN状態に応じてモーダルの内容を変更
+        if (isBanned) {
+            // 現在BANされている場合 - BAN解除の設定
+            isBannedHidden.value = '0'; // BAN解除するために0に設定
+            banActionDescription.innerHTML = `ユーザー <strong>${userName}</strong> は現在BANされています。BAN解除しますか？`;
+            banSubmitButton.textContent = 'BAN解除';
+            banSubmitButton.className = 'btn btn-success';
+        } else {
+            // 現在BANされていない場合 - BANの設定
+            isBannedHidden.value = '1'; // BANするために1に設定
+            banActionDescription.innerHTML = `ユーザー <strong>${userName}</strong> をBANしますか？`;
+            banSubmitButton.textContent = 'ユーザーBAN';
+            banSubmitButton.className = 'btn btn-danger';
+        }
+        
+        // フォームのactionを設定
         banUserForm.action = `/admin/users/${userId}/ban`;
         
+        // 隠しフィールドでreport_idを送信
         let hiddenReportIdInput = banUserForm.querySelector('input[name="report_id"]');
         if (!hiddenReportIdInput) {
             hiddenReportIdInput = document.createElement('input');
@@ -236,11 +244,13 @@ document.addEventListener('DOMContentLoaded', function () {
             banUserForm.appendChild(hiddenReportIdInput);
         }
         hiddenReportIdInput.value = reportId;
+        
+        // BAN理由フィールドをクリア
+        banUserModal.querySelector('#banReason').value = '';
     });
 
-    // ユーザー警告モーダル処理 (ここからwarnUserFormのsubmitイベントリスナーを削除)
+    // ユーザー警告モーダル処理
     const warnUserModal = document.getElementById('warnUserModal');
-    // warnUserFormの取得はそのまま残す
     const warnUserForm = document.getElementById('warnUserForm'); 
 
     warnUserModal.addEventListener('show.bs.modal', function (event) {
@@ -277,12 +287,7 @@ document.addEventListener('DOMContentLoaded', function () {
         warnUserForm.querySelector('#warningMessage').value = '';
     });
 
-    // ★ここにあった warnUserForm.addEventListener('submit', ...) ブロックを削除する！★
-    // このブロックを削除することで、ブラウザのデフォルトのフォーム送信挙動（ページ遷移）が有効になります。
-
-
-    // 通報ステータス更新関数 (ここはAJAXのままにするか、同様に通常フォーム送信に変更するか)
-    // ここは現状AJAXのままにしておきます。もしこちらもリロードにしたい場合は同様に修正が必要です。
+    // 通報ステータス更新関数
     function updateReportStatus(button) {
         const reportId = button.getAttribute('data-report-id');
         const currentStatus = button.getAttribute('data-current-status');

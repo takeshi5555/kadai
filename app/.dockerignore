@@ -25,3 +25,14 @@ docker-compose.*.yml
 storage/*.log
 *.log
 .vscode/
+
+app/storage/
+app/bootstrap/cache/
+app/public/storage
+app/vendor/
+app/node_modules/
+app/.git/
+app/.env
+app/*.log
+app/temp/
+app/tmp/

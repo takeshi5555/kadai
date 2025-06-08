@@ -32,7 +32,8 @@ services:
       - app_vendor:/var/www/html/vendor
       - app_node_modules:/var/www/html/node_modules
       # 一時ファイルとキャッシュも分離
-      - app_storage:/var/www/html/storage
+      #- app_storage:/var/www/html/storage
+      - ./app/storage:/var/www/html/storage:cached
       - app_bootstrap_cache:/var/www/html/bootstrap/cache
       # 設定ファイル
       - ./docker/php/check_startup.sh:/tmp/check_startup.sh:cached
@@ -127,6 +128,6 @@ volumes:
   # 新しく追加したボリューム
   app_vendor:
   app_node_modules:
-  app_storage:
+  #app_storage:
   app_bootstrap_cache:
   phpmyadmin_sessions:

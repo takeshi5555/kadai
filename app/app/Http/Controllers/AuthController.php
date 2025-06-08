@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -22,9 +23,19 @@ class AuthController extends Controller
 
 
     if (Auth::attempt($credentials)) {
-        $request->session()->regenerate();//セッションハイジャック攻撃を防げるらしい、知らんけど
-        return redirect()->intended('/main'); // main.php相当のページ
-    }
+            $request->session()->regenerate();
+
+            $user = Auth::user(); 
+
+           
+            if ($user->role === 'admin') {
+                return redirect('/main');
+            } elseif ($user->role === 'moderator') {
+                 return redirect('/main'); 
+            } else {
+               return redirect('/main');
+            }
+        }
 
     return back()->withErrors([
         'email' => 'メールアドレスまたはパスワードが正しくありません。',

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Gate; // Gate を使うために追加
 
 class UsersController extends Controller
 {
@@ -22,7 +23,6 @@ class UsersController extends Controller
         $users = $query->orderBy('created_at', 'desc')->paginate(10);
         return view('admin.users.index', compact('users'));
     }
-    
     
     public function edit(User $user)
     {
@@ -45,9 +45,8 @@ class UsersController extends Controller
         }
         // 管理者自身が自分のadminロールを剥奪できないようにする
         if ($user->id === auth()->id() && $user->isAdmin() && $request->input('role') !== 'admin') {
-             return back()->with('error', '管理者自身は自身の管理者権限を剥奪できません。');
+            return back()->with('error', '管理者自身は自身の管理者権限を剥奪できません。');
         }
-
 
         $user->name = $request->input('name');
         $user->email = $request->input('email');
@@ -56,7 +55,6 @@ class UsersController extends Controller
 
         return redirect()->route('admin.users.index')->with('success', 'ユーザー情報が更新されました。');
     }
-
 
     public function destroy(User $user)
     {
@@ -67,5 +65,29 @@ class UsersController extends Controller
 
         $user->delete();
         return redirect()->route('admin.users.index')->with('success', 'ユーザーが削除されました。');
+    }
+
+
+    /**
+     * ユーザーのBAN状態を切り替える
+     *
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Http\Response
+     */
+    public function toggleBan(User $user)
+    {
+        // Gate を使うために Illuminate\Support\Facades\Gate を use すること
+        // Gateで認可チェックを行う
+        // can-ban-users Gateを定義した場合 (モデレーターもBANできる場合)
+        Gate::authorize('can-ban-users'); // 引数に$userを渡すと、Policyに渡される
+        // もし、access-admin-only-sections Gateを使う場合（前のターンでこのGateをモデレーターにも許可した場合）
+        // Gate::authorize('access-admin-only-sections');
+
+        // BAN状態を反転させる
+        $user->is_banned = !$user->is_banned;
+        $user->save();
+
+        // 適切なリダイレクトを返す
+        return back()->with('status', $user->name . ' さんのBAN状態を切り替えました。');
     }
 }

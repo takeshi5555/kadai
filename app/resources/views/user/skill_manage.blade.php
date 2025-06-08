@@ -34,7 +34,7 @@
                         <h2 class="h5 mb-0">新規スキル登録</h2>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="/skill">
+                        <form method="POST" action="/skill" enctype="multipart/form-data"> {{-- ★ enctype属性を追加 ★ --}}
                             @csrf
                             <div class="mb-3">
                                 <label for="new_title" class="form-label">スキル名</label>
@@ -47,6 +47,15 @@
                             <div class="mb-3">
                                 <label for="new_description" class="form-label">説明</label>
                                 <textarea name="description" id="new_description" class="form-control" rows="3" placeholder="スキルの詳細な説明" required></textarea>
+                            </div>
+                            {{-- ★ 画像アップロードフィールドを追加 ★ --}}
+                            <div class="mb-3">
+                                <label for="skill_image" class="form-label">スキル画像 (任意)</label>
+                                <input type="file" name="skill_image" id="skill_image" class="form-control @error('skill_image') is-invalid @enderror" accept="image/*">
+                                @error('skill_image')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <div id="skillImageHelp" class="form-text">JPG, PNG, GIF形式の画像を選択してください (最大2MB)。</div>
                             </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-primary">登録</button>
@@ -93,7 +102,7 @@
 
                                                 {{-- 編集モード --}}
                                                 <td id="edit-{{ $skill->id }}" colspan="4" style="display:none;">
-                                                    <form method="POST" action="/skill/{{ $skill->id }}/update" class="row g-2 align-items-center">
+                                                    <form method="POST" action="/skill/{{ $skill->id }}/update" class="row g-2 align-items-center" enctype="multipart/form-data"> {{-- ★ enctype属性を追加 ★ --}}
                                                         @csrf
                                                         <div class="col-md-3">
                                                             <input type="text" name="title" value="{{ $skill->title }}" class="form-control form-control-sm" required>
@@ -103,6 +112,17 @@
                                                         </div>
                                                         <div class="col-md-4">
                                                             <textarea name="description" class="form-control form-control-sm" rows="1" required>{{ $skill->description }}</textarea>
+                                                        </div>
+                                                        {{-- ★ 画像アップロードフィールドを追加 ★ --}}
+                                                        <div class="col-md-3">
+                                                            <label for="edit_skill_image_{{ $skill->id }}" class="form-label">画像変更 (任意)</label>
+                                                            <input type="file" name="skill_image" id="edit_skill_image_{{ $skill->id }}" class="form-control form-control-sm @error('skill_image') is-invalid @enderror" accept="image/*">
+                                                            @error('skill_image')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
+                                                            @if ($skill->image_path)
+                                                                <img src="{{ asset('storage/' . $skill->image_path) }}" alt="現在の画像" class="img-thumbnail mt-2" style="max-height: 100px;">
+                                                            @endif
                                                         </div>
                                                         <div class="col-md-3 text-end text-nowrap">
                                                             <button type="submit" class="btn btn-sm btn-primary me-2">更新</button>

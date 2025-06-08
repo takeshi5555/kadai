@@ -6,6 +6,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Log;
 
 class User extends Authenticatable
 {
@@ -17,7 +18,7 @@ class User extends Authenticatable
      * @var array
      */
     protected $fillable = [
-        'name', 'email', 'password',
+        'name', 'email', 'password','role','is_banned','google_id','remember_token',
     ];
 
     /**
@@ -36,6 +37,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'is_banned' => 'boolean', 
     ];
 
     
@@ -105,4 +107,68 @@ class User extends Authenticatable
     {
         return $this->hasMany(Review::class);
     }
+
+
+    
+
+    // ユーザーのロールをチェックするヘルパーメソッド (推奨)
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isModerator(): bool
+    {
+        return $this->role === 'moderator';
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        $hasRole = in_array($this->role, $roles);
+        Log::info('User->hasAnyRole() called.');
+        Log::info('  User\'s actual role: "' . $this->role . '"');
+        Log::info('  Checking against roles: [' . implode(', ', $roles) . ']');
+        Log::info('  Result (in_array): ' . ($hasRole ? 'true' : 'false'));
+        return $hasRole;
+    }
+ 
+    public function reviewsReceived()
+    {
+        return $this->hasMany(Review::class, 'reviewee_id');
+    }
+
+    // このユーザーがreviewer_idとして書いたレビュー
+    public function reviewsWritten()
+    {
+        return $this->hasMany(Review::class, 'reviewer_id');
+    }
+    
+
+
+    // Receiving側
+    public function receivedMatchings()
+    {
+        return $this->hasManyThrough(Matching::class, Skill::class, 'user_id', 'receiving_skill_id', 'id', 'id');
+    }
+    public function receivedReports()
+    {
+        // reported_user_id は、reportsテーブルで通報を受けたユーザーのIDを示すカラム
+        return $this->hasMany(Report::class, 'reported_user_id');
+    }
+    public function warnings()
+    {
+        // user_id は、user_warningsテーブルで警告を受けたユーザーのIDを示すカラム
+        return $this->hasMany(UserWarning::class, 'user_id');
+    }
+
+    public function getAverageRatingReceivedAttribute()
+{
+    return $this->reviewsReceived()->avg('rating');
 }
+}
+

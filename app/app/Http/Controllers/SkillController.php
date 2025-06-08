@@ -4,25 +4,26 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log; // ★ 追加
 use App\Models\Skill;
 use App\Models\User;
-use App\Models\Matching; 
-use App\Models\Review; 
+use App\Models\Matching;
+use App\Models\Review;
 
 class SkillController extends Controller
 {
-        public function search(Request $request)
+    public function search(Request $request)
     {
         // 検索クエリを初期化
         $query = Skill::query();
 
         // ログイン中のユーザーIDを取得
-        // ユーザーがログインしているかを確認し、ログインしていなければnullを設定
-        $userId = Auth::id(); // Auth::id() はログインしていなければ null を返すため、このままでOK
+        $userId = Auth::id();
 
         // キーワード検索
         if ($request->filled('keyword')) {
-            $keyword = $request->input('keyword'); // input() メソッドを使うと安全
+            $keyword = $request->input('keyword');
             $query->where(function($q) use ($keyword) {
                 $q->where('title', 'like', '%' . $keyword . '%')
                   ->orWhere('description', 'like', '%' . $keyword . '%');
@@ -31,11 +32,10 @@ class SkillController extends Controller
 
         // カテゴリ絞り込み
         if ($request->filled('category')) {
-            $query->where('category', $request->input('category')); // input() メソッドを使うと安全
+            $query->where('category', $request->input('category'));
         }
 
         // 自分のスキルを除外するロジック
-        // ユーザーがログインしている場合のみ、自分のスキルを除外
         if ($userId) {
             $query->where('user_id', '!=', $userId);
         }
@@ -90,7 +90,6 @@ class SkillController extends Controller
         ]);
     }
 
-    
     // スキル管理ページ
     public function manage()
     {
@@ -98,41 +97,73 @@ class SkillController extends Controller
         return view('user.skill_manage', compact('skills'));
     }
 
-    // スキル登録
+
+
     public function store(Request $request)
     {
-        $request->validate([
+
+       
+        $validatedData = $request->validate([ // ★ バリデーションルールを修正
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'description' => 'required|string',
+            'skill_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 画像のバリデーションを追加
         ]);
+
+            $imagePath = null;
+    if ($request->hasFile('skill_image')) {
+        try {
+            // ここにdd() を置いてみる
+            $imagePath = $request->file('skill_image')->store('skill_images', 'public');
+            
+        } catch (\Exception $e) {
+           \Log::error('ファイル保存エラー: ' . $e->getMessage());
+        }
+    }
 
         Skill::create([
             'user_id' => Auth::id(),
-            'title' => $request->title,
-            'category' => $request->category,
-            'description' => $request->description,
+            'title' => $validatedData['title'], // ★ $validatedData を使用
+            'category' => $validatedData['category'], // ★ $validatedData を使用
+            'description' => $validatedData['description'], // ★ $validatedData を使用
+            'image_path' => $imagePath, // ★ image_path を保存
         ]);
 
         return redirect('/skill/manage')->with('message', 'スキルを登録しました。');
     }
 
-    // 編集フォーム表示
-    public function edit($id)
-    {
-        $skill = Skill::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
-        return view('user.skill_edit', compact('skill'));
-    }
+
+
 
     // 更新処理
     public function update(Request $request, $id)
     {
         $skill = Skill::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
 
+        $validatedData = $request->validate([ // ★ バリデーションルールを修正
+            'title' => 'required|string|max:255',
+            'category' => 'required|string|max:100',
+            'description' => 'required|string',
+            'skill_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 画像のバリデーションを追加
+        ]);
+
+        $imagePath = $skill->image_path; // 現在の画像パスを保持
+
+        // 新しい画像がアップロードされた場合
+        if ($request->hasFile('skill_image')) {
+            // 古い画像があれば削除
+            if ($skill->image_path) {
+                Storage::disk('public')->delete($skill->image_path);
+            }
+           
+            $imagePath = $request->file('skill_image')->store('skill_images', 'public');
+        }
+
         $skill->update([
-            'title' => $request->title,
-            'category' => $request->category,
-            'description' => $request->description,
+            'title' => $validatedData['title'],
+            'category' => $validatedData['category'],
+            'description' => $validatedData['description'],
+            'image_path' => $imagePath, // 更新されたパスを保存
         ]);
 
         return redirect('/skill/manage')->with('message', 'スキルを更新しました。');
@@ -142,10 +173,14 @@ class SkillController extends Controller
     public function destroy($id)
     {
         $skill = Skill::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+
+        // 関連する画像ファイルがあれば削除
+        if ($skill->image_path) {
+            Storage::disk('public')->delete($skill->image_path);
+        }
+
         $skill->delete();
 
         return redirect('/skill/manage')->with('message', 'スキルを削除しました。');
     }
-
-    
 }

@@ -77,74 +77,68 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/mypage', [MypageController::class, 'index'])->name('mypage.index'); // MypageControllerをここで使用
 
     // Skill Management (スキル管理)
-    Route::get('/skill/manage', [SkillController::class, 'manage'])->name('skill.manage.index'); // 名前を追加
-    Route::post('/skill', [SkillController::class, 'store'])->name('skill.store'); // 名前を追加
-    Route::get('/skill/{id}/edit', [SkillController::class, 'edit'])->name('skill.edit'); // 名前を追加
-    Route::post('/skill/{id}/update', [SkillController::class, 'update'])->name('skill.update'); // 名前を追加
-    Route::post('/skill/{id}/delete', [SkillController::class, 'destroy'])->name('skill.destroy'); // 名前を追加
+    Route::middleware(['check.ban'])->group(function () {
+        // Skill Management (スキル管理)
+        Route::get('/skill/manage', [SkillController::class, 'manage'])->name('skill.manage.index');
+        Route::post('/skill', [SkillController::class, 'store'])->name('skill.store');
+        Route::get('/skill/{id}/edit', [SkillController::class, 'edit'])->name('skill.edit');
+        Route::post('/skill/{id}/update', [SkillController::class, 'update'])->name('skill.update');
+        Route::post('/skill/{id}/delete', [SkillController::class, 'destroy'])->name('skill.destroy');
 
-    // Skill Import (スキルインポート)
-    Route::post('/skill/import', [SkillImportController::class, 'import'])->name('skill.import.store'); // 名前を追加
-    Route::get('/skill/import/confirm', [SkillImportController::class, 'confirm'])->name('skill.import.confirm'); // 名前を追加
-    Route::post('/skill/import/execute', [SkillImportController::class, 'execute'])->name('skill.import.execute'); // 名前を追加
+        // Skill Import (スキルインポート)
+        Route::post('/skill/import', [SkillImportController::class, 'import'])->name('skill.import.store');
+        Route::get('/skill/import/confirm', [SkillImportController::class, 'confirm'])->name('skill.import.confirm');
+        Route::post('/skill/import/execute', [SkillImportController::class, 'execute'])->name('skill.import.execute');
 
-    // Matching Application (マッチング申し込み)
-    Route::get('/matching/apply/{skillId}', [MatchingController::class, 'apply'])->name('matching.apply.form'); // 名前を追加
-    Route::post('/matching/apply/confirm', [MatchingController::class, 'confirm'])->name('matching.apply.confirm'); // 名前を追加
-    Route::post('/matching/apply/execute', [MatchingController::class, 'store'])->name('matching.apply.store'); // 名前を追加
+        // Matching Application (マッチング申し込み)
+        Route::get('/matching/apply/{skillId}', [MatchingController::class, 'apply'])->name('matching.apply.form');
+        Route::post('/matching/apply/confirm', [MatchingController::class, 'confirm'])->name('matching.apply.confirm');
+        Route::post('/matching/apply/execute', [MatchingController::class, 'store'])->name('matching.apply.store');
 
+        // Matching History & Actions (マッチング履歴・承認・拒否・完了・キャンセル)
+        Route::get('/matching/history', [MatchingController::class, 'history'])->name('matching.history.index');
+        Route::post('/matching/{id}/approve', [MatchingController::class, 'approve'])->name('matching.approve');
+        Route::post('/matching/{id}/reject', [MatchingController::class, 'reject'])->name('matching.reject');
+        Route::post('/matching/{id}/cancel', [MatchingController::class, 'cancel'])->name('matching.cancel');
+        Route::post('/matching/{id}/complete', [MatchingController::class, 'complete'])->name('matching.complete');
+        Route::get('/matching/history/download', [MatchingController::class, 'download'])->name('matching.history.download');
 
+        // Review (レビュー)
+        Route::get('/review/{matchingId}', [ReviewController::class, 'form'])->name('review.form');
+        Route::post('/review/{matchingId}', [ReviewController::class, 'submit'])->name('review.submit');
 
-    // Matching History & Actions (マッチング履歴・承認・拒否・完了・キャンセル)
-    Route::get('/matching/history', [MatchingController::class, 'history'])->name('matching.history.index'); // 名前を追加
-    Route::post('/matching/{id}/approve', [MatchingController::class, 'approve'])->name('matching.approve'); // 名前を追加
-    Route::post('/matching/{id}/reject', [MatchingController::class, 'reject'])->name('matching.reject'); // 名前を追加
-    Route::post('/matching/{id}/cancel', [MatchingController::class, 'cancel'])->name('matching.cancel'); // 名前を追加
-    Route::post('/matching/{id}/complete', [MatchingController::class, 'complete'])->name('matching.complete'); // 名前を追加
-    // マッチング履歴ダウンロード（追加）
-    Route::get('/matching/history/download', [MatchingController::class, 'download'])->name('matching.history.download'); // MatchingControllerでdownloadメソッドを実装してください
+        // Message (メッセージ)
+        Route::get('/message/{matchingId}', [MessageController::class, 'show'])->name('message.show');
+        Route::post('/message/{matchingId}', [MessageController::class, 'store'])->name('message.store');
 
-    // Review (レビュー)
-    Route::get('/review/{matchingId}', [ReviewController::class, 'form'])->name('review.form'); // 名前を追加
-    Route::post('/review/{matchingId}', [ReviewController::class, 'submit'])->name('review.submit'); // 名前を追加
+        // マッチング履歴のエクスポート
+        Route::get('/profile/export-matching-history', [ExportController::class, 'showExportForm'])->name('profile.export.form');
+        Route::post('/profile/export-matching-history', [ExportController::class, 'exportMatchingHistory'])->name('profile.export.execute');
 
-    // Message (メッセージ)
-    Route::get('/message/{matchingId}', [MessageController::class, 'show'])->name('message.show');
-    Route::post('/message/{matchingId}', [MessageController::class, 'store'])->name('message.store');
-
-     // ★追加: マッチング履歴のエクスポート
-    Route::get('/profile/export-matching-history', [ExportController::class, 'showExportForm'])->name('profile.export.form');
-    Route::post('/profile/export-matching-history', [ExportController::class, 'exportMatchingHistory'])->name('profile.export.execute');
-
-    //reports
-    Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+        // reports
+        Route::post('/reports', [ReportController::class, 'store'])->name('reports.store');
+    });
 });
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
 
-    // 管理者 ('admin') ロールのみがアクセスできるルート
-    Route::middleware(['role:admin'])->group(function () {
-        Route::get('/', [AdminsController::class, 'index'])->name('index'); // 管理者ダッシュボード
+    // --- 管理者 (admin) のみがアクセスできるルートグループ ---
+    // 管理者ダッシュボードのトップも管理者のみにする場合はここに含める
+    Route::middleware('can:access-admin-page')->group(function () {
+        Route::get('/', [AdminsController::class, 'index'])->name('index'); // 管理者ダッシュボードのトップ
+
         Route::resource('users', UsersController::class)->except(['show', 'create', 'store']); // ユーザー管理
+        Route::put('users/{user}/ban', [UsersController::class, 'toggleBan'])->name('users.toggleBan'); // ユーザーBAN/BAN解除
         Route::resource('skills', SkillsController::class)->except(['show', 'create', 'store']); // スキル管理
-
-
-                // ユーザーBAN/BAN解除のルート
-        Route::put('users/{user}/ban', [UsersController::class, 'toggleBan'])->name('users.toggleBan');
-        
-        // ReportsController のルート (既存のresourceは削除または修正)
-        // updateはAJAX用なので個別定義
-        Route::put('reports/{report}', [ReportsController::class, 'update'])->name('reports.update');
-        // warnUserはPOSTリクエスト
-        Route::post('reports/{report}/warn', [ReportsController::class, 'warnUser'])->name('reports.warnUser');
     });
 
-    
-
-    // 管理者 ('admin') またはモデレーター ('moderator') ロールのどちらかがアクセスできるルート
-    // これらのルートも '/admin' URLプレフィックスと 'admin.' ルート名プレフィックスを持つ
-    Route::middleware(['role:admin,moderator'])->group(function () {
-        Route::resource('reports', ReportsController::class)->except(['create', 'store', 'edit','update']); // 通報管理
+    // --- 管理者 (admin) またはモデレーター (moderator) がアクセスできるルートグループ ---
+    // Gateの定義を変更したため、/admin/reports は管理者もアクセス可能になる
+    Route::middleware('can:access-moderator-report-management')->group(function () {
+        Route::resource('reports', ReportsController::class)->only(['index', 'show', 'destroy']);
+        Route::put('reports/{report}', [ReportsController::class, 'update'])->name('reports.update');
+        Route::put('users/{user}/ban', [UsersController::class, 'toggleBan'])->name('users.toggleBan');
+        Route::post('reports/{report}/warn', [ReportsController::class, 'warnUser'])->name('reports.warnUser');
     });
 
 });

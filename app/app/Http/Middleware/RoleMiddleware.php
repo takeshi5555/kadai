@@ -7,31 +7,30 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
+use Illuminate\Support\Facades\Log;
 class RoleMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @param  string|array  $roles  必要なロール (例: 'admin', 'moderator', 'admin,moderator')
-     */
     public function handle(Request $request, Closure $next, string|array $roles): Response
     {
-        if (!Auth::check()) {
-            // ログインしていない場合はログインページへリダイレクト
-            return redirect('/login')->with('error', 'ログインが必要です。');
-        }
+       if (!Auth::check()) {
+        return redirect('/login')->with('error', 'ログインが必要です。');
+    }
 
-        $user = Auth::user();
-        $requiredRoles = is_string($roles) ? explode(',', $roles) : $roles; // カンマ区切り文字列を配列に変換
-
-        // ユーザーがいずれかの必要なロールを持っているかチェック
-        if (!$user->hasAnyRole($requiredRoles)) {
-            // 権限がない場合、ホームページにリダイレクトまたは403エラー
-            return redirect('/main')->with('error', 'このページにアクセスする権限がありません。');
-            // または abort(403, 'Unauthorized access.');
-        }
-
+    $user = Auth::user();
+    $requiredRoles = is_string($roles) ? explode(',', $roles) : $roles;
+    
+    // デバッグ情報
+    Log::info('User role: "' . $user->role . '"');
+    Log::info('Required roles: ' . json_encode($requiredRoles));
+    
+    // 直接チェック
+    if (in_array($user->role, $requiredRoles)) {
+        Log::info('Access granted');
         return $next($request);
     }
+    
+    Log::warning('Access denied');
+    return redirect('/main');
+    }
 }
+

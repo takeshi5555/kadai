@@ -28,7 +28,7 @@
                 <p class="lead mb-4">SkillSwapは、あなたが持っているスキルを他の誰かに教えたり、逆に学びたいスキルを持つ人から学ぶことができる、スキルシェアサービスです。</p>
                 <div class="row mt-4">
                     <div class="col-md-4 mb-3">
-                        <i class="bi bi-person-check fs-2 text-primary"></i> {{-- Bootstrap Icons を使う場合 --}}
+                        <i class="bi bi-person-check fs-2 text-primary"></i>
                         <h4 class="mt-2">簡単登録</h4>
                         <p class="text-muted">数ステップであなたのスキルを登録できます。</p>
                     </div>
@@ -50,16 +50,19 @@
     {{-- --- おすすめカテゴリ --- --}}
     <section class="mb-5">
         <h2 class="text-center mb-4">おすすめカテゴリ</h2>
-        @if($categories->isEmpty())
-            <p class="text-center text-muted">カテゴリはまだ登録されていません。</p>
+        @if($categoriesToDisplay->isEmpty())
+        <p class="text-center text-muted">カテゴリはまだ登録されていません。</p>
         @else
-            <div class="d-flex flex-wrap justify-content-center gap-3"> {{-- カテゴリをフレックスボックスで中央寄せに --}}
-                @foreach($categories as $category)
-                    <a href="{{ url('/skill/search?category=' . urlencode($category)) }}" class="btn btn-outline-info text-nowrap"> {{-- ボタン風のカテゴリ表示 --}}
-                        {{ $category }}
-                    </a>
-                @endforeach
-            </div>
+        <div class="d-flex flex-wrap justify-content-center gap-3">
+            @foreach($categoriesToDisplay as $category) 
+            <a href="{{ url('/skill/search?category=' . urlencode($category->name)) }}" class="card text-decoration-none text-body category-card" style="width: 180px;">
+                <img src="{{ asset($category->image) }}" class="card-img-top" alt="{{ $category->name }}" style="height: 120px; object-fit: cover;">
+                <div class="card-body p-2 text-center">
+                    <h5 class="card-title h6 mb-0">{{ $category->name }}</h5>
+                </div>
+            </a>
+            @endforeach 
+        </div>
         @endif
     </section>
     {{-- --- おすすめカテゴリここまで --- --}}
@@ -76,18 +79,30 @@
                 @foreach($newSkills as $skill)
                     <div class="col">
                         <a href="{{ url('/skill/detail/' . $skill->id) }}" class="card h-100 shadow-sm text-decoration-none text-body skill-card-link"> {{-- カード全体をリンクに --}}
-                            <div class="card-body">
-                                <h3 class="card-title h5 mb-2">{{ $skill->title }}</h3> {{-- タイトルサイズを調整 --}}
-                                <p class="card-text small text-muted mb-2">
-                                    <strong>カテゴリ:</strong> {{ $skill->category }}<br>
-                                    <strong>提供者:</strong> {{ $skill->user->name ?? '不明なユーザー' }}
-                                </p>
-                                <p class="card-text mb-0">{{ Str::limit($skill->description, 100) }}</p> {{-- 説明文の表示 --}}
-                            </div>
-                        </a>
-                    </div>
-                @endforeach
-            </div>
+                            @if($skill->image_path)
+    {{-- 画像が存在する場合のみ表示 --}}
+    {{-- ★この下の行が削除されるか、別の行が削除されるかのどちらかです★ --}}
+    <img src="{{ asset('storage/' . $skill->image_path) }}" 
+        class="card-img-top" 
+        alt="{{ $skill->title }}" 
+        style="height: 180px; object-fit: cover;"
+        onload="console.log('画像読み込み成功')"
+        onerror="console.log('画像読み込み失敗'); this.style.display='none';">
+        @else
+        <img src="{{ asset('images/categories/default.png') }}" class="card-img-top"  alt="デフォルトスキル画像"  style="height: 180px; object-fit: cover;">
+        @endif
+        <div class="card-body">
+            <h3 class="card-title h5 mb-2">{{ $skill->title }}</h3>
+            <p class="card-text small text-muted mb-2">
+                <strong>カテゴリ:</strong> {{ $skill->category }}<br>
+                <strong>提供者:</strong> {{ $skill->user->name ?? '不明なユーザー' }}
+            </p>
+            <p class="card-text mb-0">{{ Str::limit($skill->description, 100) }}</p>
+        </div>
+    </a>
+</div>
+@endforeach
+</div>
         @endif
     </section>
     {{-- --- 新着スキルここまで --- --}}

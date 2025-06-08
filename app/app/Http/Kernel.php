@@ -64,7 +64,9 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role' => \App\Http\Middleware\RoleMiddleware::class,
+        'check.ban' => \App\Http\Middleware\CheckUserBan::class, 
     ];
+
     protected $middlewareAliases = [
     'role' => \App\Http\Middleware\RoleMiddleware::class,
 ];
