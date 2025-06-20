@@ -8,19 +8,64 @@
 <div class="container" style="max-width: 960px; margin: 0 auto; padding: 20px;">
     <h1 class="mb-4">{{ $user->name }}さんのマイページ</h1>
 
-    {{-- ユーザー情報カード --}}
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <h2 class="h5 mb-0">ユーザー情報</h2>
-        </div>
-        <div class="card-body">
-            <p><strong>ユーザー名:</strong> {{ $user->name }}</p>
-            <p><strong>メールアドレス:</strong> {{ $user->email }}</p>
-            <a href="{{ route('password.request') }}" class="btn btn-secondary mt-2">
-                パスワードを再設定する
-            </a>
+{{-- --- ユーザー情報カード --- --}}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0">ユーザー情報</h2>
+        {{-- 編集ボタンを追加 --}}
+        <button type="button" class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#editUserInfoModal">
+            <i class="bi bi-pencil-square me-1"></i> 編集
+        </button>
+    </div>
+    <div class="card-body">
+        <p><strong>ユーザー名:</strong> {{ $user->name }}</p>
+        <p><strong>メールアドレス:</strong> {{ $user->email }}</p>
+        <a href="{{ route('password.request') }}" class="btn btn-secondary mt-2">
+            パスワードを再設定する
+        </a>
+    </div>
+</div>
+
+{{-- --- ユーザー情報編集モーダル --- --}}
+<div class="modal fade" id="editUserInfoModal" tabindex="-1" aria-labelledby="editUserInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('mypage.updateUserInfo') }}" method="POST">
+                @csrf
+                @method('PUT') {{-- PUTメソッドを使用 --}}
+
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="editUserInfoModalLabel">ユーザー情報を編集</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">ユーザー名</label>
+                        <input type="text" class="form-control @error('name') is-invalid @enderror" id="name" name="name" value="{{ old('name', $user->name) }}" required>
+                        @error('name')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">メールアドレス</label>
+                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email', $user->email) }}" required>
+                        @error('email')
+                            <div class="invalid-feedback">
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-primary">更新</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
     {{-- 未読メッセージ通知 --}}
     @if($unreadMessagesCount > 0)
@@ -102,23 +147,33 @@
         </div>
     </div>
 
-    {{-- スキル管理カード --}}
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-success text-white">
-            <h2 class="h5 mb-0">私が提供できるスキル</h2>
-        </div>
-        <div class="card-body">
-            @if($skills->isEmpty())
-                <p class="text-muted">まだスキルを登録していません。</p>
-                <a href="{{ route('skill.manage.index') }}" class="btn btn-success mt-2">
-                    新しいスキルを登録する
-                </a>
-            @else
-                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                    @foreach($skills as $skill)
+{{-- スキル管理カード --}}
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-success text-white">
+        <h2 class="h5 mb-0">私が提供できるスキル</h2>
+    </div>
+    <div class="card-body">
+        @if($skills->isEmpty())
+            <p class="text-center text-muted">まだスキルを登録していません。</p>
+            <a href="{{ route('skill.manage.index') }}" class="btn btn-success mt-2">
+                新しいスキルを登録する
+            </a>
+        @else
+            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {{-- レスポンシブなグリッドレイアウト --}}
+                @foreach($skills as $skill)
                     <div class="col">
                         <a href="{{ route('skill.detail.show', $skill->id) }}" 
-                           class="card h-100 text-decoration-none text-body skill-link">
+                           class="card h-100 shadow-sm text-decoration-none text-body skill-card-link"> {{-- カード全体をリンクに --}}
+                            @if($skill->image_path)
+                                {{-- 画像が存在する場合のみ表示 --}}
+                                <img src="{{ asset('storage/' . $skill->image_path) }}" 
+                                    class="card-img-top" 
+                                    alt="{{ $skill->title }}" 
+                                    style="height: 180px; object-fit: cover;">
+                            @else
+                                {{-- 画像がない場合はデフォルト画像を表示 --}}
+                                <img src="{{ asset('images/categories/default.png') }}" class="card-img-top" alt="デフォルトスキル画像" style="height: 180px; object-fit: cover;">
+                            @endif
                             <div class="card-body">
                                 <h3 class="card-title h6 mb-2">
                                     {{ $skill->title }} ({{ $skill->category }})
@@ -129,207 +184,153 @@
                             </div>
                         </a>
                     </div>
-                    @endforeach
-                </div>
-                
-                <div class="text-center mt-4">
-                    <a href="{{ route('skill.manage.index') }}" class="btn btn-success">
-                        新しいスキルを登録・管理する
-                    </a>
-                </div>
-            @endif
-        </div>
+                @endforeach
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ route('skill.manage.index') }}" class="btn btn-success">
+                    新しいスキルを登録・管理する
+                </a>
+            </div>
+        @endif
     </div>
+</div>
 
     {{-- マッチング履歴カード --}}
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-info text-white">
-            <h2 class="h5 mb-0">マッチング履歴</h2>
+            <h2 class="h5 mb-0">進行中のマッチング</h2>
         </div>
         <div class="card-body">
-            {{-- 申し込んだマッチング --}}
-            <h4 class="mt-2 mb-3">あなたが申し込んだマッチング</h4>
-            @if($requestedMatchings->isEmpty())
-                <p class="text-muted">あなたが申し込んだマッチングはまだありません。</p>
-            @else
-                <div class="matching-list">
-                    @foreach($requestedMatchings as $matching)
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h3 class="h5">
-                                    <span class="text-primary">{{ $matching->offeringSkill->title ?? 'N/A' }}</span>
-                                    を提供する
-                                    <span class="text-success">{{ $matching->offerUser->name ?? 'N/A' }}</span>
-                                    さんへの申し込み
-                                </h3>
-                                
-                                <div class="row mb-2">
-                                    <div class="col-md-6">
-                                        <p><strong>ステータス:</strong> 
-                                            <span class="badge bg-{{ $matching->status == 1 ? 'success' : ($matching->status == 3 ? 'danger' : 'warning') }}">
-                                                {{ $matching->statusText }}
-                                            </span>
-                                        </p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p><strong>予定日時:</strong> 
-                                            {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <p><strong>マッチングID:</strong> {{ $matching->id }}</p>
-
-                                {{-- レビュー表示 --}}
-                                @if($matching->status == 2)
-                                    <div class="review-section mt-3">
-                                        <p class="text-info">このマッチングは完了しています。</p>
-                                        
-                                        @if($matching->myReview)
-                                            <div class="alert alert-primary">
-                                                <strong>あなたのレビュー:</strong> 評価 {{ $matching->myReview->rating }} / 5<br>
-                                                コメント: {{ $matching->myReview->comment ?? 'なし' }}
-                                            </div>
-                                        @else
-                                            <a href="{{ route('review.form', ['matchingId' => $matching->id]) }}" 
-                                               class="btn btn-success btn-sm">相手をレビューする</a>
-                                        @endif
-                                        
-                                        @if($matching->reviewFromPartner)
-                                            <div class="alert alert-success">
-                                                <strong>相手からのレビュー:</strong> 評価 {{ $matching->reviewFromPartner->rating }} / 5<br>
-                                                コメント: {{ $matching->reviewFromPartner->comment ?? 'なし' }}
-                                            </div>
-                                        @else
-                                            <p class="text-muted">相手からのレビューはまだありません。</p>
-                                        @endif
-                                    </div>
-                                @else
-                                    <p class="text-muted mt-3">マッチング完了後にレビューが表示されます。</p>
-                                @endif
-
-                                {{-- アクションボタン --}}
-                                <div class="action-buttons mt-3">
-                                    <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" 
-                                       class="btn btn-primary btn-sm">メッセージを見る</a>
-                                    
-                                    @if($matching->status == 0 || $matching->status == 1)
-                                        <form action="{{ route('matching.cancel', $matching->id) }}" 
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
-                                        </form>
-                                    @endif
-                                    
-                                    @if($matching->status == 1)
-                                        <form action="{{ route('matching.complete', $matching->id) }}" 
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-info btn-sm">完了する</button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </div>
+{{-- 申し込んだマッチング --}}
+<h4 class="mt-2 mb-3">あなたが申し込んでいるマッチング</h4>
+@if($appliedMatchings->isEmpty())
+    <p class="text-muted">現在、あなたが申し込んでいるマッチングはまだありません。</p>
+@else
+    <div class="matching-list">
+        @foreach($appliedMatchings as $matching)
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h3 class="h5">
+                        {{-- あなたがリクエストしているスキル (offeringSkillは相手のもの) --}}
+                        <span class="text-primary">{{ $matching->offeringSkill->title ?? 'N/A' }}</span>
+                        を提供希望する
+                        {{-- 相手の名前 (offeringSkillを所有するユーザー) --}}
+                        <span class="text-success">{{ $matching->offeringSkill->user->name ?? 'N/A' }}</span>
+                        さんへの申し込み
+                    </h3>
+                    {{-- 既存のステータス表示はそのまま --}}
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <p><strong>ステータス:</strong>
+                                <span class="badge bg-{{ $matching->status == 1 ? 'success' : ($matching->status == 3 ? 'danger' : 'warning') }}">
+                                    {{ $matching->statusText }}
+                                </span>
+                            </p>
                         </div>
-                    @endforeach
+                    </div>
+
+                    {{-- あなたが提供するスキルと相手が提供するスキルを表示 --}}
+                    <p><strong>あなたが提供するスキル:</strong> {{ $matching->receivingSkill->title ?? 'N/A' }}</p>
+                    <p><strong>相手が提供するスキル:</strong> {{ $matching->offeringSkill->title ?? 'N/A' }}</p>
+                    {{-- 予定日時をここへ移動 --}}
+                    <p><strong>予定日時:</strong>
+                        {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}
+                    </p>
+
+                    {{-- アクションボタン --}}
+                    <div class="action-buttons mt-3">
+                        <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}"
+                           class="btn btn-primary btn-sm">メッセージを見る</a>
+
+                        {{-- 申し込んだ側はキャンセルボタンのみ --}}
+                        @if($matching->status == 0 || $matching->status == 1)
+                            <form action="{{ route('matching.cancel', $matching->id) }}"
+                                  method="POST" class="d-inline"
+                                  onsubmit="return confirm('本当にこの申請を取り消しますか？');">
+                                @csrf
+                                <button type="submit" class="btn btn-warning btn-sm">申請取り消し</button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
-            @endif
+            </div>
+        @endforeach
+    </div>
+@endif
 
-            {{-- 申し込まれたマッチング --}}
-            <h4 class="mt-4 mb-3">相手から申し込まれたマッチング</h4>
-            @if($offeredMatchings->isEmpty())
-                <p class="text-muted">相手から申し込まれたマッチングはまだありません。</p>
-            @else
-                <div class="matching-list">
-                    @foreach($offeredMatchings as $matching)
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h3 class="h5">
-                                    <span class="text-primary">{{ $matching->receivingSkill->title ?? 'N/A' }}</span>
-                                    をリクエストする
-                                    <span class="text-success">{{ $matching->requestUser->name ?? 'N/A' }}</span>
-                                    さんからの申し込み
-                                </h3>
-                                
-                                <div class="row mb-2">
-                                    <div class="col-md-6">
-                                        <p><strong>ステータス:</strong> 
-                                            <span class="badge bg-{{ $matching->status == 1 ? 'success' : ($matching->status == 3 ? 'danger' : 'warning') }}">
-                                                {{ $matching->statusText }}
-                                            </span>
-                                        </p>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <p><strong>予定日時:</strong> 
-                                            {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <p><strong>マッチングID:</strong> {{ $matching->id }}</p>
+---
 
-                                {{-- レビュー表示 --}}
-                                @if($matching->status == 2)
-                                    <div class="review-section mt-3">
-                                        <p class="text-info">このマッチングは完了しています。</p>
-                                        
-                                        @if($matching->myReview)
-                                            <div class="alert alert-primary">
-                                                <strong>あなたのレビュー:</strong> 評価 {{ $matching->myReview->rating }} / 5<br>
-                                                コメント: {{ $matching->myReview->comment ?? 'なし' }}
-                                            </div>
-                                        @else
-                                            <a href="{{ route('review.form', ['matchingId' => $matching->id]) }}" 
-                                               class="btn btn-success btn-sm mb-3">相手をレビューする</a>
-                                        @endif
-                                        
-                                        @if($matching->reviewFromPartner)
-                                            <div class="alert alert-success">
-                                                <strong>相手からのレビュー:</strong> 評価 {{ $matching->reviewFromPartner->rating }} / 5<br>
-                                                コメント: {{ $matching->reviewFromPartner->comment ?? 'なし' }}
-                                            </div>
-                                        @else
-                                            <p class="text-muted">相手からのレビューはまだありません。</p>
-                                        @endif
-                                    </div>
-                                @else
-                                    <p class="text-muted mt-3">マッチング完了後にレビューが表示されます。</p>
-                                @endif
-
-                                {{-- アクションボタン --}}
-                                <div class="action-buttons mt-3">
-                                    <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}" 
-                                       class="btn btn-primary btn-sm">メッセージを見る</a>
-                                    
-                                    @if($matching->status == 0)
-                                        <form action="{{ route('matching.approve', $matching->id) }}" 
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-success btn-sm">承認する</button>
-                                        </form>
-                                        <form action="{{ route('matching.reject', $matching->id) }}" 
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-danger btn-sm">拒否する</button>
-                                        </form>
-                                    @elseif($matching->status == 1)
-                                        <form action="{{ route('matching.complete', $matching->id) }}" 
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-info btn-sm">完了する</button>
-                                        </form>
-                                        <form action="{{ route('matching.cancel', $matching->id) }}" 
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </div>
+{{-- 申し込まれたマッチング --}}
+<h4 class="mt-4 mb-3">相手から申し込まれているマッチング</h4>
+@if($receivedMatchings->isEmpty())
+    <p class="text-muted">現在、相手から申し込まれているマッチングはまだありません。</p>
+@else
+    <div class="matching-list">
+        @foreach($receivedMatchings as $matching)
+            <div class="card mb-3">
+                <div class="card-body">
+                    <h3 class="h5">
+                        {{-- あなたが提供するスキル (offeringSkillはあなたのもの) --}}
+                        <span class="text-primary">{{ $matching->offeringSkill->title ?? 'N/A' }}</span>
+                        を提供希望する
+                        {{-- 相手の名前 (receivingSkillを所有するユーザー) --}}
+                        <span class="text-success">{{ $matching->receivingSkill->user->name ?? 'N/A' }}</span>
+                        さんからの申し込み
+                    </h3>
+                    {{-- 既存のステータス表示はそのまま --}}
+                    <div class="row mb-2">
+                        <div class="col-md-6">
+                            <p><strong>ステータス:</strong>
+                                <span class="badge bg-{{ $matching->status == 1 ? 'success' : ($matching->status == 3 ? 'danger' : 'warning') }}">
+                                    {{ $matching->statusText }}
+                                </span>
+                            </p>
                         </div>
-                    @endforeach
+                    </div>
+
+                    {{-- あなたが提供するスキルと相手が提供するスキルを表示 --}}
+                    <p><strong>あなたが提供するスキル:</strong> {{ $matching->receivingSkill->title ?? 'N/A' }}</p>
+                    <p><strong>相手が提供するスキル:</strong> {{ $matching->offeringSkill->title ?? 'N/A' }}</p>
+                    {{-- 予定日時をここへ移動 --}}
+                    <p><strong>予定日時:</strong>
+                        {{ $matching->scheduled_at ? $matching->scheduled_at->format('Y-m-d H:i') : '未定' }}
+                    </p>
+
+                    {{-- アクションボタン --}}
+                    <div class="action-buttons mt-3">
+                        <a href="{{ route('message.show', ['matchingId' => $matching->id]) }}"
+                           class="btn btn-primary btn-sm">メッセージを見る</a>
+
+                        @if($matching->status == 0) {{-- 保留中の場合、承認/拒否ボタンを表示 --}}
+                            <form action="{{ route('matching.approve', $matching->id) }}"
+                                  method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-success btn-sm">承認する</button>
+                            </form>
+                            <form action="{{ route('matching.reject', $matching->id) }}"
+                                  method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-danger btn-sm">拒否する</button>
+                            </form>
+                        @elseif($matching->status == 1) {{-- 承認済みの場合、完了/キャンセルボタンを表示 --}}
+                            <form action="{{ route('matching.complete', $matching->id) }}"
+                                  method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-info btn-sm">完了する</button>
+                            </form>
+                            <form action="{{ route('matching.cancel', $matching->id) }}"
+                                  method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-warning btn-sm">キャンセル</button>
+                            </form>
+                        @endif
+                    </div>
                 </div>
-            @endif
+            </div>
+        @endforeach
+    </div>
+@endif
             
             <div class="text-center mt-4">
                 <a href="{{ route('matching.history.index') }}" class="btn btn-info">

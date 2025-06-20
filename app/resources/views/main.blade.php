@@ -35,7 +35,7 @@
                     <div class="col-md-4 mb-3">
                         <i class="bi bi-book fs-2 text-success"></i>
                         <h4 class="mt-2">多様なスキル</h4>
-                        <p class="text-muted">プログラミングから料理まで、あらゆるスキルが集まります。</p>
+                        <p class="text-muted">プログラミングからビジネスまで、あらゆるスキルが集まります。</p>
                     </div>
                     <div class="col-md-4 mb-3">
                         <i class="bi bi-hand-thumbs-up fs-2 text-info"></i>

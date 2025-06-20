@@ -3,11 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Auth; // Auth ファサードを使用
 use App\Models\Skill;
-use App\Models\Review;
-use App\Models\User;
-
+use App\Models\Review; // Review モデルを使用
+use App\Models\User; // User モデルを使用
 
 class Matching extends Model
 {
@@ -15,44 +14,44 @@ class Matching extends Model
         'offering_skill_id', 'receiving_skill_id', 'status', 'scheduled_at'
     ];
 
-
     protected $casts = [
         'scheduled_at' => 'datetime',
     ];
-    
-    
+
     public function offeringSkill()
     {
-    return $this->belongsTo(Skill::class, 'offering_skill_id');
+        return $this->belongsTo(Skill::class, 'offering_skill_id');
     }
 
     public function receivingSkill()
-
     {
-    return $this->belongsTo(Skill::class, 'receiving_skill_id');
+        return $this->belongsTo(Skill::class, 'receiving_skill_id');
     }
 
 
     public function myReview()
     {
-        return $this->hasOne(\App\Review::class)
-        ->where('reviewer_id', auth()->id());
+        // ログインユーザーが書いたレビュー
+        return $this->hasOne(Review::class, 'matching_id')
+                    ->where('reviewer_id', auth()->id());
     }
 
-    // レビューされた側が自分になるレビューを取得
-    public function partnerReview()
+
+    public function partnerReview() // 相手（ログインユーザーに対して）が書いたレビュー
     {
-        return $this->hasOne(Review::class, 'matching_id')->where('reviewee_id', Auth::id());
+        // 相手がレビューを書いた、かつ、ログインユーザーがレビューの受け取り手であるレビューを取得
+        return $this->hasOne(Review::class, 'matching_id')
+                    ->where('reviewee_id', Auth::id()); // ★ここを修正★
     }
 
     // 申請者ユーザーへのリレーション
     public function applicantUser()
     {
         return $this->hasOneThrough(User::class, Skill::class,
-            'id', 
-            'id',
-            'offering_skill_id',
-            'user_id' 
+            'id', // SkillテーブルのID
+            'id', // UserテーブルのID
+            'offering_skill_id', // Matchingテーブルの外部キー (SkillのID)
+            'user_id' // Skillテーブルの外部キー (UserのID)
         );
     }
 
@@ -67,28 +66,28 @@ class Matching extends Model
         );
     }
 
-        public function skill()
+    // skill() は offeringSkill または receivingSkill を指すため、明確さを考慮すると不要かもしれません
+    // もし特定の目的がある場合は残してください
+    public function skill()
     {
         return $this->belongsTo(Skill::class);
     }
 
     public function offerUser()
     {
-        // offeringSkill() の所有者 (user_id) を取得
         return $this->hasOneThrough(
-            User::class,     // 最終的に取得したいモデル
-            Skill::class,    // 中間モデル
-            'id',            // Skillモデルのローカルキー (id)
-            'id',            // Userモデルのローカルキー (id)
-            'offering_skill_id', // Matchingモデルのローカルキー (matching.offering_skill_id)
-            'user_id'        // Skillモデルの外部キー (skill.user_id)
+            User::class,        // 最終的に取得したいモデル
+            Skill::class,       // 中間モデル
+            'id',               // Skillモデルのローカルキー (id)
+            'id',               // Userモデルのローカルキー (id)
+            'offering_skill_id',// Matchingモデルのローカルキー (matching.offering_skill_id)
+            'user_id'           // Skillモデルの外部キー (skill.user_id)
         );
     }
 
-    // スキルリクエスト者 (receivingSkillを介してユーザーを取得)
+
     public function requestUser()
     {
-        // receivingSkill() の所有者 (user_id) を取得
         return $this->hasOneThrough(
             User::class,
             Skill::class,
@@ -99,30 +98,34 @@ class Matching extends Model
         );
     }
 
-    // このマッチングに紐づくレビュー（1対1の関係）
+
     public function review()
     {
+        // これはマッチングに紐づく全てのレビューを取得するリレーションとして残せますが、
+        // myReview() や partnerReview() の方が特定のレビューを取得するのには適しています。
         return $this->hasOne(Review::class, 'matching_id');
     }
 
-    public function reviewFromPartner() 
-    {
-        return $this->hasOne(Review::class, 'matching_id')->where('reviewee_id', Auth::id());
-    }
+    // public function reviewFromPartner() は partnerReview() と重複するため削除します ★削除★
+    // public function reviewFromPartner()
+    // {
+    //     return $this->hasOne(Review::class, 'matching_id')->where('reviewee_id', Auth::id());
+    // }
 
-        public function getStatusTextAttribute()
+    public function getStatusTextAttribute()
     {
         switch ($this->status) {
             case 0: return '保留中';
             case 1: return '承認済み';
             case 2: return '完了';
             case 3: return 'キャンセル';
+            case 4: return '拒否';
             default: return '不明';
         }
     }
-     public function reviews()
+
+    public function reviews()
     {
         return $this->hasMany(Review::class, 'matching_id');
     }
-
 }

@@ -75,6 +75,7 @@ Route::middleware(['auth'])->group(function () {
 
     // My Page (マイページ) - ★ここが追加・修正のポイント★
     Route::get('/mypage', [MypageController::class, 'index'])->name('mypage.index'); // MypageControllerをここで使用
+    Route::put('/mypage/user-info', [App\Http\Controllers\MypageController::class, 'updateUserInfo'])->name('mypage.updateUserInfo');
 
     // Skill Management (スキル管理)
     Route::middleware(['check.ban'])->group(function () {
@@ -82,8 +83,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/skill/manage', [SkillController::class, 'manage'])->name('skill.manage.index');
         Route::post('/skill', [SkillController::class, 'store'])->name('skill.store');
         Route::get('/skill/{id}/edit', [SkillController::class, 'edit'])->name('skill.edit');
-        Route::post('/skill/{id}/update', [SkillController::class, 'update'])->name('skill.update');
-        Route::post('/skill/{id}/delete', [SkillController::class, 'destroy'])->name('skill.destroy');
+        Route::put('/skill/{id}', [SkillController::class, 'update'])->name('skill.update'); // PUTメソッドで /skill/{id} を受け付ける
+        Route::delete('/skill/{id}/delete', [SkillController::class, 'destroy'])->name('skill.destroy');
 
         // Skill Import (スキルインポート)
         Route::post('/skill/import', [SkillImportController::class, 'import'])->name('skill.import.store');

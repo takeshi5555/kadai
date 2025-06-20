@@ -14,13 +14,34 @@ class UsersController extends Controller
     {
         $query = User::query();
 
+        // 検索機能
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
         }
 
-        $users = $query->orderBy('created_at', 'desc')->paginate(10);
+        // ソート機能
+        $sortField = $request->input('sort', 'created_at'); // デフォルトは登録日
+        $sortDirection = $request->input('direction', 'desc'); // デフォルトは降順
+
+        // ソート可能なフィールドを制限（セキュリティ対策）
+        $allowedSortFields = ['id', 'name', 'email', 'role', 'created_at'];
+        if (!in_array($sortField, $allowedSortFields)) {
+            $sortField = 'created_at';
+        }
+
+        // ソート方向を制限
+        $allowedDirections = ['asc', 'desc'];
+        if (!in_array($sortDirection, $allowedDirections)) {
+            $sortDirection = 'desc';
+        }
+
+        $users = $query->orderBy($sortField, $sortDirection)->paginate(10);
+        
+        // ページネーション時にパラメータを保持
+        $users->appends($request->query());
+
         return view('admin.users.index', compact('users'));
     }
     

@@ -11,99 +11,128 @@ use App\Models\User;
 use App\Models\UserWarning;
 use App\Models\Report;
 use App\Models\ReportReason;
+use Illuminate\Validation\Rule;
 
 class MypageController extends Controller
 {
-    public function index()
+
+
+    public function updateUserInfo(Request $request)
     {
         $user = Auth::user();
 
-        // ユーザーが登録したスキル
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => [
+                'required',
+                'string',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($user->id), // 自身のメールアドレスは除外
+            ],
+        ]);
+
+        $user->name = $validated['name'];
+        $user->email = $validated['email'];
+        $user->save();
+
+        return redirect()->route('mypage.index')->with('success', 'ユーザー情報を更新しました。');
+    }
+
+
+    public function index()
+    {
+        $user = Auth::user();
+        $userId = $user->id;
+
         $skills = $user->skills;
 
-        // ... マッチング履歴と未読メッセージの取得ロジックはそのまま ...
-        $offeredSkillIds = $user->skills->pluck('id')->toArray();
-        $offeredMatchings = collect();
+        // --- あなたが申し込んでいるマッチング ---
+        // offeringSkill が自分のスキルに紐づき、かつステータスが保留中(0)または承認済み(1)のもの
+        $appliedMatchings = Matching::whereHas('offeringSkill', function ($query) use ($userId) {
+                                $query->where('user_id', $userId);
+                            })
+                            // 相手のスキルも明確にするため receivingSkill が相手のスキルであることを追加
+                            ->whereHas('receivingSkill', function ($query) use ($userId) {
+                                $query->where('user_id', '!=', $userId);
+                            })
+                            ->whereIn('status', [0, 1]) // ★ ここを追加: ステータスが保留中(0)または承認済み(1) ★
+                            ->with([
+                                'offeringSkill.user',
+                                'receivingSkill.user',
+                                'myReview',
+                                'partnerReview'
+                            ])
+                            ->orderByDesc('created_at')
+                            ->get();
 
-        if (!empty($offeredSkillIds)) {
-            $offeredMatchings = Matching::whereIn('offering_skill_id', $offeredSkillIds)
-                                         ->with([
-                                             'offeringSkill',
-                                             'receivingSkill',
-                                             'offerUser',
-                                             'requestUser',
-                                             'myReview',
-                                             'reviewFromPartner'
-                                         ])
-                                         ->get();
-        }
 
-        $requestedMatchings = Matching::whereHas('requestUser', function ($query) use ($user) {
-                                                $query->where('users.id', $user->id);
-                                            })
-                                        ->with([
-                                            'offeringSkill',
-                                            'receivingSkill',
-                                            'offerUser',
-                                            'requestUser',
-                                            'myReview',
-                                            'reviewFromPartner'
-                                        ])
-                                        ->get();
+        // --- 相手から申し込まれているマッチング ---
+        // receivingSkill が自分のスキルに紐づき、かつステータスが保留中(0)または承認済み(1)のもの
+        $receivedMatchings = Matching::whereHas('receivingSkill', function ($query) use ($userId) {
+                                $query->where('user_id', $userId);
+                            })
+                            // 相手のスキルも明確にするため offeringSkill が相手のスキルであることを追加
+                            ->whereHas('offeringSkill', function ($query) use ($userId) {
+                                $query->where('user_id', '!=', $userId);
+                            })
+                            ->whereIn('status', [0, 1]) // ★ ここを追加: ステータスが保留中(0)または承認済み(1) ★
+                            ->with([
+                                'offeringSkill.user',
+                                'receivingSkill.user',
+                                'myReview',
+                                'partnerReview'
+                            ])
+                            ->orderByDesc('created_at')
+                            ->get();
 
-        $offeredMatchings->each(function ($matching) {
+        // statusText の設定
+        $receivedMatchings->each(function ($matching) {
             $matching->statusText = $this->getMatchingStatusText($matching->status);
         });
-        $requestedMatchings->each(function ($matching) {
+
+        $appliedMatchings->each(function ($matching) {
             $matching->statusText = $this->getMatchingStatusText($matching->status);
         });
 
         $unreadMessagesCount = $user->receivedMessages()->whereNull('read_at')->count();
 
-
-        // ★★★ ここを修正/追加：未確認の警告と確認済みの警告を分けて取得 ★★★
         $unreadWarnings = $user->warnings()
-                               ->whereNull('read_at') // read_at が NULL のもの（未確認）
+                               ->whereNull('read_at')
                                ->with(['report.reason', 'report.subReason'])
                                ->orderBy('created_at', 'desc')
                                ->get();
 
         $readWarnings = $user->warnings()
-                             ->whereNotNull('read_at') // read_at が NULL ではないもの（確認済み）
+                             ->whereNotNull('read_at')
                              ->with(['report.reason', 'report.subReason'])
-                             ->orderBy('read_at', 'desc') // 確認された日時でソート
+                             ->orderBy('read_at', 'desc')
                              ->get();
-
-
 
         return view('mypage.index', compact(
             'user',
             'skills',
-            'offeredMatchings',
-            'requestedMatchings',
+            'appliedMatchings',
+            'receivedMatchings',
             'unreadMessagesCount',
-            'unreadWarnings', // ★追加：未確認の警告
-            'readWarnings'    // ★追加：確認済みの警告
-
+            'unreadWarnings',
+            'readWarnings'
         ));
     }
 
-    // ★★★ ここから追加：警告を「確認済み」にするメソッド ★★★
     public function markWarningAsRead(UserWarning $warning)
     {
-        // ログイン中のユーザーが、この警告の対象ユーザーであることを確認
         if (Auth::id() !== $warning->user_id) {
-            abort(403, 'Unauthorized action.'); // 許可されていない操作
+            abort(403, 'Unauthorized action.');
         }
 
-        // read_at を現在時刻に設定して保存
         $warning->read_at = Carbon::now();
         $warning->save();
 
         return redirect()->back()->with('success', '警告を確認済みにしました。');
     }
-    // ★★★ ここまで追加 ★★★
 
+    // MatchingControllerのステータス定義に合わせるため、拒否(4)も追加
     private function getMatchingStatusText($status)
     {
         switch ($status) {
@@ -111,6 +140,7 @@ class MypageController extends Controller
             case 1: return '承認済み';
             case 2: return '完了';
             case 3: return 'キャンセル';
+            case 4: return '拒否';
             default: return '不明';
         }
     }

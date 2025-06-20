@@ -5,7 +5,8 @@
 @section('content')
 <div class="container my-4"> {{-- コンテナを追加し、上下に余白 --}}
 
-    {{-- フラッシュメッセージの表示エリア --}}
+    {{-- フラッシュメッセージの表示エリア - 削除（レイアウトファイルで表示される） --}}
+    {{-- 
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
@@ -19,6 +20,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+    --}}
 
     {{-- ヘッダー部分 --}}
     <div class="d-flex justify-content-between align-items-center mb-3">

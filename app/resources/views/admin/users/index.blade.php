@@ -38,12 +38,44 @@
 
             <div class="table-responsive">
                 <table class="table table-hover table-striped">
-                    <thead>
+                                       <thead>
                         <tr>
-                            <th>ID</th>
+                            {{-- ID列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    ID
+                                    <a href="{{ route('admin.users.index', array_merge(request()->query(), ['sort' => 'id', 'direction' => (request('sort') == 'id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
                             <th>名前</th>
                             <th>メールアドレス</th>
-                            <th>ロール</th>
+                            {{-- ロール列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    ロール
+                                    <a href="{{ route('admin.users.index', array_merge(request()->query(), ['sort' => 'role', 'direction' => (request('sort') == 'role' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'role')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
                             <th>登録日</th>
                             <th>アクション</th>
                         </tr>

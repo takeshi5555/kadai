@@ -59,6 +59,24 @@
                             </th>
                             <th>タイトル</th>
                             <th>説明</th>
+                            {{-- ★ここから追加・修正★ カテゴリ列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    カテゴリ
+                                    <a href="{{ route('admin.skills.index', array_merge(request()->query(), ['sort' => 'category', 'direction' => (request('sort') == 'category' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'category')
+                                            @if(request('direction') == 'asc')
+                                                &#9650; 
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
+                            {{-- ★ここまで追加・修正★ --}}
                             {{-- 所有者列のソートボタン --}}
                             <th>
                                 <div class="d-flex align-items-center">
@@ -101,7 +119,10 @@
                             <tr>
                                 <td>{{ $skill->id }}</td>
                                 <td>{{ $skill->title }}</td>
-                                <td>{{ Str::limit($skill->description, 50) }}</td> {{-- 説明を短く表示 --}}
+                                <td>{{ Str::limit($skill->description, 50) }}</td>
+                                {{-- ★ここから追加・修正★ カテゴリを表示 --}}
+                                <td>{{ $skill->category }}</td> 
+                                {{-- ★ここまで追加・修正★ --}}
                                 <td>{{ $skill->user->name ?? '不明' }}</td> {{-- リレーションがあれば表示 --}}
                                 <td>{{ $skill->created_at ? $skill->created_at->format('Y-m-d H:i') : 'N/A' }}</td>
                                 <td>
@@ -109,7 +130,8 @@
                                             data-bs-toggle="modal" data-bs-target="#editSkillModal"
                                             data-id="{{ $skill->id }}"
                                             data-title="{{ $skill->title }}"
-                                            data-description="{{ $skill->description }}">
+                                            data-description="{{ $skill->description }}"
+                                            data-category="{{ $skill->category }}"> {{-- ★ここを追加★ --}}
                                         編集
                                     </button>
                                     <form action="{{ route('admin.skills.destroy', $skill) }}" method="POST" class="d-inline-block" onsubmit="return confirm('本当にこのスキルを削除しますか？');">
@@ -121,7 +143,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center">スキルが見つかりません。</td>
+                                <td colspan="7" class="text-center">スキルが見つかりません。</td> {{-- colspanの数を増やす --}}
                             </tr>
                         @endforelse
                     </tbody>
@@ -131,13 +153,10 @@
             {{-- ページネーションリンク --}}
             <div class="d-flex justify-content-center">
                 {{ $skills->appends(request()->query())->links('pagination::simple-bootstrap-4') }}
-
             </div>
         </div>
     </div>
 </div>
-
-
 
 {{-- スキル編集モーダル --}}
 <div class="modal fade" id="editSkillModal" tabindex="-1" aria-labelledby="editSkillModalLabel" aria-hidden="true">
@@ -155,6 +174,20 @@
                         <label for="modalSkillTitle" class="form-label">タイトル</label>
                         <input type="text" class="form-control" id="modalSkillTitle" name="title" required>
                     </div>
+                    {{-- ★ここから追加・修正★ カテゴリのセレクトボックスとカスタム入力フィールド --}}
+                    <div class="mb-3">
+                        <label for="modalSkillCategory" class="form-label">カテゴリ</label>
+                        <select class="form-select" id="modalSkillCategory" name="category" required 
+                                onchange="handleModalCategoryChange(this)">
+                            <option value="">カテゴリを選択してください</option>
+                            @foreach ($categories as $categoryName)
+                                <option value="{{ $categoryName }}">{{ $categoryName }}</option>
+                            @endforeach
+                            <option value="custom_category">新しいカテゴリを追加...</option>
+                        </select>
+                        <input type="text" class="form-control mt-2" id="modalCustomCategoryInput" name="new_custom_category" placeholder="新しいカテゴリ名を入力" style="display:none;">
+                    </div>
+                    {{-- ★ここまで追加・修正★ --}}
                     <div class="mb-3">
                         <label for="modalSkillDescription" class="form-label">説明</label>
                         <textarea class="form-control" id="modalSkillDescription" name="description" rows="5"></textarea>
@@ -170,42 +203,95 @@
 </div>
 @endsection
 
-
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const editSkillModal = document.getElementById('editSkillModal');
+
+    // モーダル表示時の処理
     editSkillModal.addEventListener('show.bs.modal', function (event) {
-        // モーダルを開くボタン
-        const button = event.relatedTarget;
+        const button = event.relatedTarget; // モーダルを開いたボタン
 
         // データ属性からスキル情報を取得
         const skillId = button.getAttribute('data-id');
         const skillTitle = button.getAttribute('data-title');
         const skillDescription = button.getAttribute('data-description');
-        const skillIsActive = button.getAttribute('data-is_active');
+        const skillCategory = button.getAttribute('data-category'); // ★ここを追加★
 
         // モーダル内のフォーム要素を取得
         const modalForm = editSkillModal.querySelector('#editSkillForm');
         const modalTitleInput = editSkillModal.querySelector('#modalSkillTitle');
         const modalDescriptionTextarea = editSkillModal.querySelector('#modalSkillDescription');
-        const modalIsActiveCheckbox = editSkillModal.querySelector('#modalSkillIsActive');
+        const modalCategorySelect = editSkillModal.querySelector('#modalSkillCategory'); // ★ここを追加★
+        const modalCustomCategoryInput = editSkillModal.querySelector('#modalCustomCategoryInput'); // ★ここを追加★
 
         // フォームのアクションURLを設定
-        // 例: /admin/skills/{id}
-        modalForm.action = `/admin/skills/${skillId}`;
+        modalForm.action = `/admin/skills/${skillId}`; // ルーティングに合わせて修正
 
         // フォームにスキル情報を設定
         modalTitleInput.value = skillTitle;
         modalDescriptionTextarea.value = skillDescription;
-        modalIsActiveCheckbox.checked = (skillIsActive === '1'); // '1'の場合はチェック
+
+        // ★ここから追加・修正★ カテゴリのセレクトボックスとカスタム入力フィールドの設定
+        // Bladeから渡されたカテゴリリストをJavaScriptで利用
+        const categories = @json($categories); 
+
+        if (categories.includes(skillCategory)) {
+            // 既存のカテゴリリストに含まれる場合
+            modalCategorySelect.value = skillCategory;
+            modalCustomCategoryInput.style.display = 'none';
+            modalCustomCategoryInput.removeAttribute('required');
+            // name属性をリセットし、セレクトボックスのname属性を維持
+            modalCustomCategoryInput.name = 'new_custom_category'; 
+            modalCategorySelect.name = 'category'; 
+        } else {
+            // 既存のカテゴリリストに含まれない場合（カスタムカテゴリ）
+            modalCategorySelect.value = 'custom_category'; // 「新しいカテゴリを追加...」を選択
+            modalCustomCategoryInput.style.display = 'block'; // 入力フィールドを表示
+            modalCustomCategoryInput.setAttribute('required', 'required'); // 必須にする
+            modalCustomCategoryInput.value = skillCategory; // 現在のカテゴリ名を入力フィールドにセット
+            // この入力フィールドをcategoryとして送信し、セレクトボックスのname属性を削除
+            modalCustomCategoryInput.name = 'category'; 
+            modalCategorySelect.removeAttribute('name'); 
+        }
+        // ★ここまで追加・修正★
     });
 
     // モーダルが閉じられたときにフォームをリセット（任意）
     editSkillModal.addEventListener('hidden.bs.modal', function (event) {
         const modalForm = editSkillModal.querySelector('#editSkillForm');
         modalForm.reset(); // フォームをリセット
+
+        // ★ここから追加・修正★ カスタムカテゴリ入力フィールドも非表示に戻す
+        const modalCustomCategoryInput = editSkillModal.querySelector('#modalCustomCategoryInput');
+        if (modalCustomCategoryInput) {
+            modalCustomCategoryInput.style.display = 'none';
+            modalCustomCategoryInput.removeAttribute('required');
+            // name属性をリセット
+            modalCustomCategoryInput.name = 'new_custom_category'; 
+            // セレクトボックスのname属性を戻す
+            editSkillModal.querySelector('#modalSkillCategory').name = 'category';
+        }
+        // ★ここまで追加・修正★
     });
+
+    // ★新しいカテゴリが選択されたときのハンドラ関数を定義★
+    function handleModalCategoryChange(selectElement) {
+        const customCategoryInput = document.getElementById('modalCustomCategoryInput');
+        if (selectElement.value === 'custom_category') {
+            customCategoryInput.style.display = 'block';
+            customCategoryInput.setAttribute('required', 'required');
+            customCategoryInput.name = 'category'; // 新規入力フィールドをcategoryとして送信
+            selectElement.removeAttribute('name'); // セレクトボックスのname属性を削除
+        } else {
+            customCategoryInput.style.display = 'none';
+            customCategoryInput.removeAttribute('required');
+            customCategoryInput.name = 'new_custom_category'; // name属性を戻す
+            selectElement.name = 'category'; // セレクトボックスのname属性を戻す
+        }
+    }
+    // グローバルスコープで利用できるようにする（HTMLのonchange属性から直接呼び出すため）
+    window.handleModalCategoryChange = handleModalCategoryChange; 
 });
 </script>
 @endpush

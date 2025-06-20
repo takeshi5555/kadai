@@ -33,9 +33,8 @@
                     </div>
                     <div class="col-md-3">
                         <select name="status" id="status" class="form-select">
-                            <option value="unprocessed" {{ request('status') === 'unprocessed' ? 'selected' : '' }}>未処理</option>
+                            <option value="unprocessed" {{ request('status', 'unprocessed') === 'unprocessed' ? 'selected' : '' }}>未処理</option>
                             <option value="processed" {{ request('status') === 'processed' ? 'selected' : '' }}>処理済み</option>
-                            <option value="ignored" {{ request('status') === 'ignored' ? 'selected' : '' }}>無視</option>
                             <option value="all" {{ request('status') === 'all' ? 'selected' : '' }}>全て</option>
                         </select>
                     </div>
@@ -55,14 +54,110 @@
                 <table class="table table-hover table-striped">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>通報者</th>
-                            <th>報告対象者</th>
-                            <th>大まかな理由</th>
-                            <th>詳細な理由</th>
+                            {{-- ID列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    ID
+                                    <a href="{{ route('admin.reports.index', array_merge(request()->query(), ['sort' => 'id', 'direction' => (request('sort') == 'id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
+                            {{-- 通報者列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    通報者
+                                    <a href="{{ route('admin.reports.index', array_merge(request()->query(), ['sort' => 'reporting_user_id', 'direction' => (request('sort') == 'reporting_user_id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'reporting_user_id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
+                            {{-- 報告対象者列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    報告対象者
+                                    <a href="{{ route('admin.reports.index', array_merge(request()->query(), ['sort' => 'reported_user_id', 'direction' => (request('sort') == 'reported_user_id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'reported_user_id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
+                            {{-- 大まかな理由列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    大まかな理由
+                                    <a href="{{ route('admin.reports.index', array_merge(request()->query(), ['sort' => 'reason_id', 'direction' => (request('sort') == 'reason_id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'reason_id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
+                            {{-- 詳細な理由列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    詳細な理由
+                                    <a href="{{ route('admin.reports.index', array_merge(request()->query(), ['sort' => 'sub_reason_id', 'direction' => (request('sort') == 'sub_reason_id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'sub_reason_id')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
                             <th>コメント</th>
                             <th>ステータス</th>
-                            <th>通報日時</th>
+                            {{-- 通報日時列のソートボタン --}}
+                            <th>
+                                <div class="d-flex align-items-center">
+                                    通報日時
+                                    <a href="{{ route('admin.reports.index', array_merge(request()->query(), ['sort' => 'created_at', 'direction' => (request('sort') == 'created_at' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                        @if(request('sort') == 'created_at')
+                                            @if(request('direction') == 'asc')
+                                                &#9650;
+                                            @else
+                                                &#9660;
+                                            @endif
+                                        @else
+                                            &#9660;
+                                        @endif
+                                    </a>
+                                </div>
+                            </th>
                             <th>アクション</th>
                         </tr>
                     </thead>
@@ -76,11 +171,10 @@
                                 <td>{{ $report->reason->reason_text ?? '不明' }}</td>
                                 <td>{{ $report->subReason->reason_text ?? 'なし' }}</td>
                                 <td>{{ Str::limit($report->comment, 30) }}</td>
-                                <td><span class="badge {{ $report->status === 'unprocessed' ? 'bg-danger' : ($report->status === 'processed' ? 'bg-success' : 'bg-secondary') }}">{{
+                                <td><span class="badge {{ $report->status === 'unprocessed' ? 'bg-danger' : 'bg-success' }}">{{
                                     match($report->status) {
                                         'unprocessed' => '未処理',
                                         'processed' => '処理済み',
-                                        'ignored' => '無視',
                                         default => $report->status,
                                     }
                                 }}</span></td>
@@ -107,19 +201,28 @@
                                             </button>
                                         @endif
 
-                                        {{-- 通報ステータス更新ボタン（ドロップダウンなどでも良い） --}}
-                                        <button type="button" class="btn btn-sm btn-info text-white mark-reviewed-btn"
-                                                data-report-id="{{ $report->id }}"
-                                                data-current-status="{{ $report->status }}"
-                                                onclick="updateReportStatus(this)">
-                                            確認済みにする
-                                        </button>
+                                        {{-- 通報ステータス更新ボタン --}}
+                                        @if($report->status === 'unprocessed')
+                                            <button type="button" class="btn btn-sm btn-info text-white mark-reviewed-btn"
+                                                    data-report-id="{{ $report->id }}"
+                                                    data-current-status="{{ $report->status }}"
+                                                    onclick="updateReportStatus(this)">
+                                                処理済みにする
+                                            </button>
+                                        @else
+                                            <button type="button" class="btn btn-sm btn-secondary mark-reviewed-btn"
+                                                    data-report-id="{{ $report->id }}"
+                                                    data-current-status="{{ $report->status }}"
+                                                    onclick="updateReportStatus(this)">
+                                                未処理に戻す
+                                            </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center">通報が見つかりません。</td>
+                                <td colspan="9" class="text-center">通報が見つかりません。</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -150,10 +253,6 @@
                 <div class="modal-body">
                     <p id="banActionDescription">ユーザー <strong id="banUserName"></strong> のBAN状態を変更します。</p>
                     <input type="hidden" id="isBannedHidden" name="is_banned" value="">
-                    <div class="mb-3">
-                        <label for="banReason" class="form-label">BAN理由 (任意)</label>
-                        <textarea class="form-control" id="banReason" name="ban_reason" rows="3"></textarea>
-                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
@@ -245,8 +344,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         hiddenReportIdInput.value = reportId;
         
-        // BAN理由フィールドをクリア
-        banUserModal.querySelector('#banReason').value = '';
+        // BAN理由フィールドをクリア（フィールドが存在する場合）
+        const banReasonField = banUserModal.querySelector('#banReason');
+        if (banReasonField) {
+            banReasonField.value = '';
+        }
     });
 
     // ユーザー警告モーダル処理
@@ -292,27 +394,21 @@ document.addEventListener('DOMContentLoaded', function () {
         const reportId = button.getAttribute('data-report-id');
         const currentStatus = button.getAttribute('data-current-status');
         let newStatus = 'processed';
+        let confirmMessage = '';
 
         if (currentStatus === 'unprocessed') {
             newStatus = 'processed';
-            if (!confirm(`この通報を「処理済み」に更新しますか？`)) {
-                return;
-            }
+            confirmMessage = 'この通報を「処理済み」に更新しますか？';
         } else if (currentStatus === 'processed') {
-            newStatus = 'ignored';
-            if (!confirm(`この通報を「無視」に更新しますか？`)) {
-                return;
-            }
-        } else if (currentStatus === 'ignored') {
             newStatus = 'unprocessed';
-            if (!confirm(`この通報を「未処理」に戻しますか？`)) {
-                return;
-            }
+            confirmMessage = 'この通報を「未処理」に戻しますか？';
         } else {
-            if (!confirm(`通報ID ${reportId} のステータスを「処理済み」に更新しますか？`)) {
-                 return;
-            }
             newStatus = 'processed';
+            confirmMessage = `通報ID ${reportId} のステータスを「処理済み」に更新しますか？`;
+        }
+
+        if (!confirm(confirmMessage)) {
+            return;
         }
 
         fetch(`/admin/reports/${reportId}`, {
@@ -333,33 +429,46 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .then(data => {
             if (data.success) {
-                // SweetAlert2は残しておきますが、alertでもOKです
-                Swal.fire({
-                    icon: 'success',
-                    title: '成功',
-                    text: data.message,
-                    showConfirmButton: false,
-                    timer: 1500
-                }).then(() => {
+                // SweetAlert2がある場合は使用、なければalertを使用
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '成功',
+                        text: data.message,
+                        showConfirmButton: false,
+                        timer: 1500
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    alert(data.message);
                     location.reload();
-                });
+                }
             } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'エラー',
-                    text: data.message || 'ステータス更新に失敗しました。',
-                    confirmButtonText: 'OK'
-                });
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'エラー',
+                        text: data.message || 'ステータス更新に失敗しました。',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    alert(data.message || 'ステータス更新に失敗しました。');
+                }
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            Swal.fire({
-                icon: 'error',
-                title: 'エラー',
-                text: 'エラーが発生しました: ' + error.message,
-                confirmButtonText: 'OK'
-            });
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'エラー',
+                    text: 'エラーが発生しました: ' + error.message,
+                    confirmButtonText: 'OK'
+                });
+            } else {
+                alert('エラーが発生しました: ' + error.message);
+            }
         });
     }
     window.updateReportStatus = updateReportStatus;

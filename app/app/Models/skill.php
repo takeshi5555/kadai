@@ -24,10 +24,7 @@ class Skill extends Model
         return $this->hasMany(Matching::class); // スキルに対するマッチング
     }
 
-    public function reviews()
-    {
-        return $this->hasMany(Review::class);
-    }
+
     public function offeredMatchings()
     {
         return $this->hasMany(Matching::class, 'offering_skill_id');
@@ -37,5 +34,18 @@ class Skill extends Model
     public function receivedMatchings()
     {
         return $this->hasMany(Matching::class, 'receiving_skill_id');
+    }
+
+     public function reviews()
+    {
+        // このスキルが提供側または受領側となっているマッチングのIDを全て取得
+        $offeringMatchingIds = $this->offeredMatchings()->pluck('id');
+        $receivingMatchingIds = $this->receivedMatchings()->pluck('id');
+
+        // 両方のIDを結合し、重複を排除
+        $allRelevantMatchingIds = $offeringMatchingIds->merge($receivingMatchingIds)->unique();
+
+        // 取得したマッチングIDに紐づくレビューを取得するクエリを返す
+        return Review::whereIn('matching_id', $allRelevantMatchingIds);
     }
 }

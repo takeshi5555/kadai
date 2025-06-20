@@ -19,16 +19,44 @@ class ReportsController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Report::with(['reportingUser', 'reportedUser', 'reason', 'subReason'])
-                         ->orderBy('created_at', 'desc');
+        $query = Report::with(['reportingUser', 'reportedUser', 'reason', 'subReason']);
 
-        if ($request->filled('status') && $request->input('status') !== 'all') {
-            $query->where('status', $request->input('status'));
+        // ソート機能の追加
+        $sortField = $request->input('sort', 'created_at');
+        $sortDirection = $request->input('direction', 'desc');
+        
+        // 許可されたソートフィールドのリスト
+        $allowedSorts = [
+            'id',
+            'reporting_user_id',
+            'reported_user_id', 
+            'reason_id',
+            'sub_reason_id',
+            'created_at'
+        ];
+        
+        // ソート条件を適用
+        if (in_array($sortField, $allowedSorts)) {
+            $query->orderBy($sortField, $sortDirection);
         } else {
-            // デフォルトで「未処理」の通報のみ表示する場合
+            // デフォルトのソート
+            $query->orderBy('created_at', 'desc');
+        }
+
+        // ステータスフィルタリングの修正
+        if ($request->filled('status')) {
+            $status = $request->input('status');
+            if ($status !== 'all') {
+                $query->where('status', $status);
+            }
+            // $status が 'all' の場合は何もフィルタリングしない（全て表示）
+        } else {
+            // statusパラメータが送信されていない場合のデフォルト動作
+            // デフォルトで「未処理」のみ表示したい場合
             $query->where('status', 'unprocessed');
-            // または、全ての通報を表示したい場合は下記のように変更
-            // $query->whereIn('status', ['unprocessed', 'processed', 'ignored']);
+            
+            // または、デフォルトで全て表示したい場合は上記をコメントアウト
+            // （何もフィルタリングしない）
         }
 
         if ($request->filled('search')) {
@@ -136,6 +164,4 @@ class ReportsController extends Controller
             return redirect()->back()->with('error', '警告の送信中にエラーが発生しました。');
         }
     }
-
-
 }
