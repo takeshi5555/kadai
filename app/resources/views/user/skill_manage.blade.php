@@ -28,20 +28,21 @@
                 </div>
             @endif
 
-            {{-- 新規スキル登録 (変更なし) --}}
+            {{-- 新規スキル登録 (非同期対応) --}}
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
                     <h2 class="h5 mb-0">新規スキル登録</h2>
                 </div>
                 <div class="card-body">
-                    <form method="POST" action="/skill" enctype="multipart/form-data">
+                    <form id="newSkillForm" method="POST" action="/skill" enctype="multipart/form-data">
                         @csrf
                         <div class="mb-3">
-                            <label for="new_title" class="form-label">スキル名</label>
+                            <label for="new_title" class="form-label">スキル名<span class="text-danger">*</span></label>
                             <input type="text" name="title" id="new_title" class="form-control" placeholder="例: Python入門" required>
+                            <div class="invalid-feedback" id="newTitleError"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="new_category" class="form-label">カテゴリ</label>
+                            <label for="new_category" class="form-label">カテゴリ<span class="text-danger">*</span></label>
                             <select name="category" id="new_category" class="form-select" required>
                                 <option value="">カテゴリを選択してください</option>
                                 @foreach ($categories as $categoryName)
@@ -50,21 +51,26 @@
                                     </option>
                                 @endforeach
                             </select>
+                            <div class="invalid-feedback" id="newCategoryError"></div>
                         </div>
                         <div class="mb-3">
-                            <label for="new_description" class="form-label">説明</label>
+                            <label for="new_description" class="form-label">説明<span class="text-danger">*</span></label>
                             <textarea name="description" id="new_description" class="form-control" rows="3" placeholder="スキルの詳細な説明" required></textarea>
+                            <div class="invalid-feedback" id="newDescriptionError"></div>
                         </div>
                         <div class="mb-3">
                             <label for="skill_image" class="form-label">スキル画像 (任意)</label>
                             <input type="file" name="skill_image" id="skill_image" class="form-control @error('skill_image') is-invalid @enderror" accept="image/*">
-                            @error('skill_image')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                            <div class="invalid-feedback" id="newSkillImageError">
+                                @error('skill_image'){{ $message }}@enderror
+                            </div>
                             <div id="skillImageHelp" class="form-text">JPG, PNG, GIF形式の画像を選択してください (最大2MB)。</div>
                         </div>
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">登録</button>
+                            <button type="submit" class="btn btn-primary" id="newSkillSubmitBtn">
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" id="newSkillSpinner" style="display: none;"></span>
+                                登録
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -76,61 +82,66 @@
                     <h2 class="h5 mb-0">登録済みスキル</h2>
                 </div>
                 <div class="card-body">
-                    @if ($skills->isEmpty())
-                        <div class="alert alert-info" role="alert">
-                            まだ登録済みのスキルはありません。
-                        </div>
-                    @else
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover align-middle">
-                                <thead>
-                                    <tr>
-                                        <th>スキル名</th>
-                                        <th>カテゴリ</th>
-                                        <th>説明</th>
-                                        <th>画像</th>
-                                        <th>登録日</th>
-                                        <th class="text-center">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($skills as $skill)
-                                        <tr id="skill-row-{{ $skill->id }}">
-                                            <td><strong>{{ $skill->title }}</strong></td>
-                                            <td>{{ $skill->category }}</td>
-                                            <td>{{ Str::limit($skill->description, 50) }}</td>
-                                            <td>
-                                                @if ($skill->image_path)
-                                                    <img src="{{ Storage::url($skill->image_path) }}" alt="{{ $skill->title }}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
-                                                @else
-                                                    なし
-                                                @endif
-                                            </td>
-                                            <td>{{ $skill->created_at->format('Y/m/d') }}</td>
-                                            <td>
-                                    <button type="button" class="btn btn-sm btn-info text-white me-1 edit-skill-btn"
-                                            data-bs-toggle="modal" data-bs-target="#editSkillModal"
-                                            data-id="{{ $skill->id }}"
-                                            data-title="{{ $skill->title }}"
-                                            data-description="{{ $skill->description }}"
-                                            data-category="{{ $skill->category }}"
-                                            data-image="{{ $skill->image_path ? Storage::url($skill->image_path) : '' }}">
-                                        <i class="fas fa-edit"></i> 編集
-                                    </button>
-                                    <form action="{{ route('skill.destroy', $skill->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('本当にこのスキルを削除しますか？');">
-                                    @csrf
-                                    @method('DELETE') 
-                                    <button type="submit" class="btn btn-sm btn-danger">
-                                        <i class="fas fa-trash-alt"></i> 削除
-                                    </button>
-                                </form>
-                                </td>
+                    <div id="skillsTableContainer">
+                        @if ($skills->isEmpty())
+                            <div class="alert alert-info" role="alert" id="noSkillsMessage">
+                                まだ登録済みのスキルはありません。
+                            </div>
+                        @else
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle" id="skillsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>スキル名</th>
+                                            <th>カテゴリ</th>
+                                            <th>説明</th>
+                                            <th>画像</th>
+                                            <th>登録日</th>
+                                            <th class="text-center">操作</th>
                                         </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @endif
+                                    </thead>
+                                    <tbody id="skillsTableBody">
+                                        @foreach ($skills as $skill)
+                                            <tr id="skill-row-{{ $skill->id }}">
+                                                <td><strong>{{ $skill->title }}</strong></td>
+                                                <td>{{ $skill->category }}</td>
+                                                <td>{{ Str::limit($skill->description, 50) }}</td>
+                                                <td>
+                                                    @if ($skill->image_path)
+                                                        <img src="{{ Storage::url($skill->image_path) }}" alt="{{ $skill->title }}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
+                                                    @else
+                                                        なし
+                                                    @endif
+                                                </td>
+                                                <td>{{ $skill->created_at->format('Y/m/d') }}</td>
+                                                <td>
+                                        <button type="button" class="btn btn-sm btn-info text-white me-1 edit-skill-btn"
+                                                data-bs-toggle="modal" data-bs-target="#editSkillModal"
+                                                data-id="{{ $skill->id }}"
+                                                data-title="{{ $skill->title }}"
+                                                data-description="{{ $skill->description }}"
+                                                data-category="{{ $skill->category }}"
+                                                data-image="{{ $skill->image_path ? Storage::url($skill->image_path) : '' }}">
+                                            <i class="fas fa-edit"></i> 編集
+                                        </button>
+                                        <form action="{{ route('skill.destroy', $skill->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('本当にこのスキルを削除しますか？');">
+                                            @csrf
+                                            @method('DELETE') 
+                                            {{-- ★ここを修正: type="button" と delete-skill-btn クラスを追加★ --}}
+                                            <button type="button" class="btn btn-sm btn-danger delete-skill-btn"
+                                                    data-skill-id="{{ $skill->id }}" {{-- JavaScriptで使用するdata属性をここに移動 --}}
+                                                    data-skill-title="{{ $skill->title }}"> {{-- JavaScriptで使用するdata属性をここに移動 --}}
+                                                <i class="fas fa-trash-alt"></i> 削除
+                                            </button>
+                                        </form>
+                                    </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </div>
 
@@ -227,6 +238,216 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // CSRFトークンを取得
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+    // ========== 新規スキル登録の非同期化 ==========
+    const newSkillForm = document.getElementById('newSkillForm');
+    const newTitle = document.getElementById('new_title');
+    const newCategory = document.getElementById('new_category');
+    const newDescription = document.getElementById('new_description');
+    const newSkillImage = document.getElementById('skill_image');
+    const newSkillSubmitBtn = document.getElementById('newSkillSubmitBtn');
+    const newSkillSpinner = document.getElementById('newSkillSpinner');
+
+    // エラーメッセージ表示用の要素
+    const newTitleError = document.getElementById('newTitleError');
+    const newCategoryError = document.getElementById('newCategoryError');
+    const newDescriptionError = document.getElementById('newDescriptionError');
+    const newSkillImageError = document.getElementById('newSkillImageError');
+
+    // 新規スキル登録フォーム送信時の処理
+    newSkillForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        clearNewSkillValidationErrors();
+        
+        // ローディング状態にする
+        newSkillSubmitBtn.disabled = true;
+        newSkillSpinner.style.display = 'inline-block';
+
+        const formData = new FormData(this);
+
+        fetch('/skill', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
+            }
+        })
+        .then(response => {
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('サーバーからの応答が無効です。ページをリロードしてください。');
+            }
+
+            if (response.ok) {
+                return response.json();
+            } else if (response.status === 422) {
+                return response.json().then(data => {
+                    throw { status: 422, errors: data.errors };
+                });
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.message || '登録に失敗しました。');
+                });
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                // フォームをリセット
+                newSkillForm.reset();
+                
+                // テーブルに新しい行を追加
+                addNewSkillToTable(data.skill);
+                
+                // 成功メッセージを表示
+                showSuccessMessage(data.message);
+                
+            } else {
+                alert(data.message || '不明なエラーが発生しました。');
+            }
+        })
+        .catch(error => {
+            if (error.status === 422 && error.errors) {
+                displayNewSkillValidationErrors(error.errors);
+            } else {
+                alert('エラー: ' + error.message);
+                console.error('Error:', error);
+            }
+        })
+        .finally(() => {
+            // ローディング状態を解除
+            newSkillSubmitBtn.disabled = false;
+            newSkillSpinner.style.display = 'none';
+        });
+    });
+
+    // 新しいスキルをテーブルに追加する関数
+    function addNewSkillToTable(skill) {
+        const skillsTableContainer = document.getElementById('skillsTableContainer');
+        const noSkillsMessage = document.getElementById('noSkillsMessage');
+        const skillsTable = document.getElementById('skillsTable');
+        const skillsTableBody = document.getElementById('skillsTableBody');
+
+        // 「まだ登録済みのスキルがありません」メッセージを非表示にし、テーブルを表示
+        if (noSkillsMessage) {
+            noSkillsMessage.style.display = 'none';
+        }
+
+        // テーブルが存在しない場合は作成
+        if (!skillsTable) {
+            const tableHtml = `
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover align-middle" id="skillsTable">
+                        <thead>
+                            <tr>
+                                <th>スキル名</th>
+                                <th>カテゴリ</th>
+                                <th>説明</th>
+                                <th>画像</th>
+                                <th>登録日</th>
+                                <th class="text-center">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="skillsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            skillsTableContainer.innerHTML = tableHtml;
+        }
+
+        // 新しい行を作成
+        const newRow = createSkillTableRow(skill);
+        
+        // テーブルの先頭に追加（最新のスキルを上に表示）
+        const tbody = document.getElementById('skillsTableBody');
+        tbody.insertAdjacentHTML('afterbegin', newRow);
+    }
+
+    // スキルテーブル行を作成する関数（修正版）
+function createSkillTableRow(skill) {
+    const imageCell = skill.image_path 
+        ? `<img src="${getImageSrc(skill.image_path)}" alt="${skill.title}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">`
+        : 'なし';
+
+    const formattedDate = new Date(skill.created_at).toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).replace(/\//g, '/');
+
+    return `
+        <tr id="skill-row-${skill.id}">
+            <td><strong>${skill.title}</strong></td>
+            <td>${skill.category}</td>
+            <td>${skill.description.substring(0, 50)}${skill.description.length > 50 ? '...' : ''}</td>
+            <td>${imageCell}</td>
+            <td>${formattedDate}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-info text-white me-1 edit-skill-btn"
+                        data-bs-toggle="modal" data-bs-target="#editSkillModal"
+                        data-id="${skill.id}"
+                        data-title="${skill.title}"
+                        data-description="${skill.description}"
+                        data-category="${skill.category}"
+                        data-image="${skill.image_path ? getImageSrc(skill.image_path) : ''}">
+                    <i class="fas fa-edit"></i> 編集
+                </button>
+                <form action="/skill/${skill.id}" method="POST" class="d-inline-block" onsubmit="return confirm('本当にこのスキルを削除しますか？');">
+                    <input type="hidden" name="_token" value="${csrfToken}">
+                    <input type="hidden" name="_method" value="DELETE">
+                    <button type="button" class="btn btn-sm btn-danger delete-skill-btn"
+                            data-skill-id="${skill.id}"
+                            data-skill-title="${skill.title}">
+                        <i class="fas fa-trash-alt"></i> 削除
+                    </button>
+                </form>
+            </td>
+        </tr>
+    `;
+}
+
+    // 画像パスを正しいURLに変換する関数
+    function getImageSrc(imagePath) {
+        if (imagePath.startsWith('http')) {
+            return imagePath;
+        } else if (imagePath.startsWith('/storage/')) {
+            return imagePath;
+        } else {
+            return '/storage/' + imagePath;
+        }
+    }
+
+    // 新規スキル登録のバリデーションエラーを表示する関数
+    function displayNewSkillValidationErrors(errors) {
+        if (errors.title) {
+            newTitle.classList.add('is-invalid');
+            newTitleError.textContent = errors.title[0];
+        }
+        if (errors.category) {
+            newCategory.classList.add('is-invalid');
+            newCategoryError.textContent = errors.category[0];
+        }
+        if (errors.description) {
+            newDescription.classList.add('is-invalid');
+            newDescriptionError.textContent = errors.description[0];
+        }
+        if (errors.skill_image) {
+            newSkillImage.classList.add('is-invalid');
+            newSkillImageError.textContent = errors.skill_image[0];
+        }
+    }
+
+    // 新規スキル登録のバリデーションエラーをクリアする関数
+    function clearNewSkillValidationErrors() {
+        [newTitle, newCategory, newDescription, newSkillImage].forEach(el => el.classList.remove('is-invalid'));
+        [newTitleError, newCategoryError, newDescriptionError, newSkillImageError].forEach(el => el.textContent = '');
+    }
+
+    // ========== 既存のモーダル編集機能 ==========
     const editSkillModal = document.getElementById('editSkillModal');
     const editSkillForm = document.getElementById('editSkillForm');
     const editSkillId = document.getElementById('editSkillId');
@@ -235,13 +456,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const editDescription = document.getElementById('editDescription');
     const currentSkillImage = document.getElementById('currentSkillImage');
     const editSkillImageInput = document.getElementById('editSkillImage');
-    // ★★★ ここから追加 ★★★
     const clearSkillImageCheckbox = document.getElementById('clearSkillImage');
     const clearImageCheckContainer = document.getElementById('clearImageCheckContainer');
-    // ★★★ ここまで追加 ★★★
-
-    // CSRFトークンを取得
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     // エラーメッセージ表示用の要素
     const editTitleError = document.getElementById('editTitleError');
@@ -257,7 +473,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const skillTitle = button.getAttribute('data-title');
         const skillCategory = button.getAttribute('data-category');
         const skillDescription = button.getAttribute('data-description');
-        const skillImagePath = button.getAttribute('data-image'); // data属性から取得
+        const skillImagePath = button.getAttribute('data-image');
 
         // フォームフィールドに値をセット
         editSkillId.value = skillId;
@@ -269,48 +485,40 @@ document.addEventListener('DOMContentLoaded', function () {
         if (skillImagePath && skillImagePath !== '') {
             currentSkillImage.src = skillImagePath;
             currentSkillImage.style.display = 'block';
-            // ★★★ ここから追加 ★★★
-            clearImageCheckContainer.style.display = 'block'; // 画像がある場合のみチェックボックスを表示
-            clearSkillImageCheckbox.checked = false; // モーダルを開くたびにチェックを外す
-            // ★★★ ここまで追加 ★★★
+            clearImageCheckContainer.style.display = 'block';
+            clearSkillImageCheckbox.checked = false;
         } else {
             currentSkillImage.style.display = 'none';
-            // ★★★ ここから追加 ★★★
-            clearImageCheckContainer.style.display = 'none'; // 画像がない場合はチェックボックスを非表示
-            clearSkillImageCheckbox.checked = false; // 念のためチェックを外す
-            // ★★★ ここまで追加 ★★★
+            clearImageCheckContainer.style.display = 'none';
+            clearSkillImageCheckbox.checked = false;
         }
         
-        editSkillImageInput.value = ''; // ファイル入力フィールドをクリア
+        editSkillImageInput.value = '';
 
-        // フォームのアクションURLを更新 (この部分は既存でOK)
+        // フォームのアクションURLを更新
         editSkillForm.action = `/skill/${skillId}`;
 
         // 以前のバリデーションエラーをクリア
-        clearValidationErrors();
+        clearEditValidationErrors();
     });
 
     // フォーム送信時の処理 (Ajax)
     editSkillForm.addEventListener('submit', function (e) {
         e.preventDefault();
 
-        clearValidationErrors();
+        clearEditValidationErrors();
 
         const formData = new FormData(this);
         const skillId = editSkillId.value;
 
-        // PUTメソッドであることをLaravelに伝える
-        formData.append('_method', 'PUT'); 
-        
-        // CSRFトークンをフォームデータに追加
-        // formData.append('_token', csrfToken); // Headersに含めるのでFormDataには不要（重複を防ぐ）
+        formData.append('_method', 'PUT');
 
         fetch(`/skill/${skillId}`, {
-            method: 'POST', // FormDataと_method='PUT'を使うためPOSTのままでOK
+            method: 'POST',
             body: formData,
             headers: {
-                'X-Requested-With': 'XMLHttpRequest', // AjaxリクエストであることをLaravelに伝える
-                'X-CSRF-TOKEN': csrfToken // CSRFトークンをヘッダーにも追加
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken
             }
         })
         .then(response => {
@@ -348,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function () {
         })
         .catch(error => {
             if (error.status === 422 && error.errors) {
-                displayValidationErrors(error.errors);
+                displayEditValidationErrors(error.errors);
             } else {
                 alert('エラー: ' + error.message);
                 console.error('Error:', error);
@@ -356,7 +564,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // テーブル行を更新する関数 (前回の修正を適用済みとしてそのまま利用)
+    // テーブル行を更新する関数
     function updateTableRow(skillId, skill) {
         const row = document.getElementById(`skill-row-${skillId}`);
         if (row) {
@@ -366,39 +574,17 @@ document.addEventListener('DOMContentLoaded', function () {
             
             const imageCell = row.querySelector('td:nth-child(4)');
             if (skill.image_path) {
-                let imageSrc;
-                if (skill.image_path.startsWith('http')) {
-                    imageSrc = skill.image_path;
-                } else if (skill.image_path.startsWith('/storage/')) {
-                    imageSrc = skill.image_path;
-                } else {
-                    imageSrc = '/storage/' + skill.image_path;
-                }
-                // キャッシュ対策としてタイムスタンプを追加
+                let imageSrc = getImageSrc(skill.image_path);
                 imageSrc += '?t=' + new Date().getTime(); 
-
                 imageCell.innerHTML = `<img src="${imageSrc}" alt="${skill.title}" class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">`;
             } else {
-                imageCell.textContent = 'なし'; // 画像がない場合は「なし」と表示
-                imageCell.innerHTML = 'なし'; // imgタグも削除されるようにinnerHTMLを使う
+                imageCell.innerHTML = 'なし';
             }
 
             // 編集ボタンのdata属性も更新
             const editButton = row.querySelector('.edit-skill-btn');
             if (editButton) {
-                let dataImageSrc;
-                if (skill.image_path) { // 画像パスが存在する場合のみdataImageSrcを設定
-                    if (skill.image_path.startsWith('http')) {
-                        dataImageSrc = skill.image_path;
-                    } else if (skill.image_path.startsWith('/storage/')) {
-                        dataImageSrc = skill.image_path;
-                    } else {
-                        dataImageSrc = '/storage/' + skill.image_path;
-                    }
-                } else {
-                    dataImageSrc = ''; // 画像がない場合は空文字列
-                }
-                
+                const dataImageSrc = skill.image_path ? getImageSrc(skill.image_path) : '';
                 editButton.setAttribute('data-title', skill.title);
                 editButton.setAttribute('data-category', skill.category);
                 editButton.setAttribute('data-description', skill.description);
@@ -409,7 +595,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 成功メッセージを表示する関数
     function showSuccessMessage(message) {
-        // ... (省略) ... 以前のコードのまま
         const existingSuccessAlert = document.querySelector('.alert-success');
         if (existingSuccessAlert) {
             existingSuccessAlert.remove();
@@ -423,12 +608,9 @@ document.addEventListener('DOMContentLoaded', function () {
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         `;
         
-        // メッセージを表示する場所のセレクタを確認し、適宜修正してください。
-        // `document.querySelector('.container .row .col-md-10')` は特定のレイアウトに依存します
-        // 今回はシンプルに、ページトップの body の直後に追加する例を示します
-        const mainContent = document.querySelector('main.py-4.pt-5.mt-5');
-        if (mainContent) {
-            mainContent.insertAdjacentElement('afterbegin', newAlert);
+        const container = document.querySelector('.container');
+        if (container) {
+            container.insertAdjacentElement('afterbegin', newAlert);
         } else {
             document.body.prepend(newAlert);
         }
@@ -439,10 +621,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 3000);
     }
 
-    // バリデーションエラーを表示する関数 (省略)
-    function displayValidationErrors(errors) {
-        document.querySelectorAll('.form-control, .form-select').forEach(el => el.classList.remove('is-invalid'));
-        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+    // 編集モーダルのバリデーションエラーを表示する関数
+    function displayEditValidationErrors(errors) {
+        document.querySelectorAll('#editSkillForm .form-control, #editSkillForm .form-select').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('#editSkillForm .invalid-feedback').forEach(el => el.textContent = '');
 
         if (errors.title) {
             editTitle.classList.add('is-invalid');
@@ -462,10 +644,111 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // バリデーションエラーをクリアする関数 (省略)
-    function clearValidationErrors() {
-        document.querySelectorAll('.form-control, .form-select').forEach(el => el.classList.remove('is-invalid'));
-        document.querySelectorAll('.invalid-feedback').forEach(el => el.textContent = '');
+    // 編集モーダルのバリデーションエラーをクリアする関数
+    function clearEditValidationErrors() {
+        document.querySelectorAll('#editSkillForm .form-control, #editSkillForm .form-select').forEach(el => el.classList.remove('is-invalid'));
+        document.querySelectorAll('#editSkillForm .invalid-feedback').forEach(el => el.textContent = '');
+    }
+
+    // ========== スキル削除の非同期化 ==========
+    // 削除ボタンのイベントリスナーを設定（イベント委譲を使用）
+    document.addEventListener('click', function(e) {
+        // 削除ボタンまたはその子要素（アイコン）がクリックされた場合
+        const deleteBtn = e.target.closest('.delete-skill-btn');
+        if (deleteBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const skillId = deleteBtn.getAttribute('data-skill-id');
+            const skillTitle = deleteBtn.getAttribute('data-skill-title');
+            
+            // 確認ダイアログを表示
+            if (confirm(`本当に「${skillTitle}」を削除しますか？`)) {
+                deleteSkill(skillId, deleteBtn);
+            }
+        }
+    });
+
+    // スキル削除を実行する関数
+    function deleteSkill(skillId, deleteBtn) {
+        // ボタンを無効化してローディング状態にする
+        const originalText = deleteBtn.innerHTML;
+        deleteBtn.disabled = true;
+        deleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>削除中...';
+
+        // 正しい削除URLを構築
+        const deleteUrl = `/skill/${skillId}/delete`;
+        console.log('削除URL:', deleteUrl); // デバッグ用
+
+        fetch(deleteUrl, {
+            method: 'DELETE',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error('サーバーからの応答が無効です。ページをリロードしてください。');
+            }
+
+            if (response.ok) {
+                return response.json();
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.message || '削除に失敗しました。');
+                });
+            }
+        })
+        .then(data => {
+            if (data.success) {
+                // テーブルから該当行を削除
+                removeSkillFromTable(skillId);
+                
+                // 成功メッセージを表示
+                showSuccessMessage(data.message);
+                
+            } else {
+                alert(data.message || '削除に失敗しました。');
+                // ボタンを元に戻す
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalText;
+            }
+        })
+        .catch(error => {
+            alert('エラー: ' + error.message);
+            console.error('Error:', error);
+            // ボタンを元に戻す
+            deleteBtn.disabled = false;
+            deleteBtn.innerHTML = originalText;
+        });
+    }
+
+    // テーブルからスキル行を削除する関数
+    function removeSkillFromTable(skillId) {
+        const row = document.getElementById(`skill-row-${skillId}`);
+        if (row) {
+            // フェードアウトアニメーション
+            row.style.transition = 'opacity 0.3s ease';
+            row.style.opacity = '0';
+            
+            setTimeout(() => {
+                row.remove();
+                
+                // テーブルが空になった場合の処理
+                const skillsTableBody = document.getElementById('skillsTableBody');
+                if (skillsTableBody && skillsTableBody.children.length === 0) {
+                    const skillsTableContainer = document.getElementById('skillsTableContainer');
+                    skillsTableContainer.innerHTML = `
+                        <div class="alert alert-info" role="alert" id="noSkillsMessage">
+                            まだ登録済みのスキルはありません。
+                        </div>
+                    `;
+                }
+            }, 300);
+        }
     }
 });
 </script>

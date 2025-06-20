@@ -4,58 +4,54 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Matching;
-use App\Message;
-use App\Models\User;
-use App\Events\MessageSent; // これを追加
+use App\Models\Matching;
+use App\Models\Message;
+use App\Events\MessageSent;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log; // 必要に応じてログのため
 
 class MessageController extends Controller
 {
-    // メッセージ履歴表示
     public function show($matchingId)
     {
-        // マッチング情報を取得（リレーションを事前にロード）
-        $matching = Matching::with(['offeringSkill.user', 'receivingSkill.user'])->findOrFail($matchingId);
+        $matching = Matching::with(['offerUser', 'requestUser', 'messages.sender'])->findOrFail($matchingId);
         $currentUserId = Auth::id();
 
-        // ユーザーがマッチングの当事者でなければアクセス拒否
         if (
-            $matching->offeringSkill->user_id !== $currentUserId &&
-            $matching->receivingSkill->user_id !== $currentUserId
+            ($matching->offerUser->id !== $currentUserId) &&
+            ($matching->requestUser->id !== $currentUserId)
         ) {
             abort(403, 'このマッチングのメッセージにアクセスする権限がありません。');
         }
 
-        // マッチングに関連するメッセージを取得し、日付順にソート
+        Message::where('matching_id', $matchingId)
+               ->where('receiver_id', $currentUserId)
+               ->whereNull('read_at')
+               ->update(['read_at' => Carbon::now()]);
+
         $messages = Message::where('matching_id', $matchingId)
-                            ->with('sender') // 送信者情報をロード
-                            ->orderBy('created_at') // created_at でソート
+                            ->with('sender')
+                            ->orderBy('created_at')
                             ->get();
 
         return view('message.message', compact('matching', 'messages'));
     }
 
-    // メッセージ送信
     public function store(Request $request, $matchingId)
     {
         $request->validate(['content' => 'required|string|max:1000']);
 
-        $matching = Matching::with(['offeringSkill.user', 'receivingSkill.user'])->findOrFail($matchingId);
+        $matching = Matching::with(['offerUser', 'requestUser'])->findOrFail($matchingId);
         $currentUserId = Auth::id();
 
-        // 権限チェック：マッチングに関与しているユーザーのみがメッセージを送信できる
-        if ($matching->offeringSkill->user_id !== $currentUserId && $matching->receivingSkill->user_id !== $currentUserId) {
+        if (
+            ($matching->offerUser->id !== $currentUserId) &&
+            ($matching->requestUser->id !== $currentUserId)
+        ) {
             abort(403, 'このマッチングにメッセージを送信する権限がありません。');
         }
 
-        $receiverId = null;
-        // 受信者のIDを決定するロジック
-        if ($matching->offeringSkill->user_id === $currentUserId) {
-            $receiverId = $matching->receivingSkill->user_id;
-        } else {
-            $receiverId = $matching->offeringSkill->user_id;
-        }
+        $receiverId = ($matching->offerUser->id === $currentUserId) ? $matching->requestUser->id : $matching->offerUser->id;
 
         if (is_null($receiverId)) {
             Log::error("Failed to determine receiverId for matching ID: {$matchingId}");
@@ -67,13 +63,12 @@ class MessageController extends Controller
             'sender_id' => $currentUserId,
             'receiver_id' => $receiverId,
             'content' => $request->content,
-            'sent_at' => now(), // もしsent_atを使うなら
+            'sent_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        // イベントを発火 (新しいメッセージと送信ユーザー)
-        broadcast(new MessageSent($message, Auth::user()))->toOthers(); // toOthers() で自分以外にブロードキャスト
+        broadcast(new MessageSent($message, Auth::user()))->toOthers();
 
         return response()->json(['message' => 'メッセージを送信しました。']);
     }

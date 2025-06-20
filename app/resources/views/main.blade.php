@@ -109,38 +109,46 @@
 
     <hr class="my-5">
 
-    {{-- --- おすすめレビュー --- --}}
-    <section class="mb-5">
-        <h2 class="text-center mb-4">おすすめレビュー</h2>
-        @if($featuredReviews->isEmpty())
-            <p class="text-center text-muted">まだレビューがありません。</p>
-        @else
-            <div class="row row-cols-1 row-cols-md-2 g-4"> {{-- レビューもグリッドレイアウトで --}}
-                @foreach($featuredReviews as $review)
-                    <div class="col">
-                        <div class="card h-100 shadow-sm review-card"> {{-- レビューカードのデザイン --}}
-                            <div class="card-body">
-                                <p class="card-text text-info mb-1">
-                                    <strong>提供スキル：</strong>
-                                    <span class="fw-bold">{{ $review->matching->offeringSkill->title ?? '不明なスキル' }}</span>
-                                </p>
-                                <p class="card-text fs-5 fw-bold mb-3">"{{ $review->comment }}"</p> {{-- コメントを強調 --}}
-                                <div class="text-end">
-                                    <p class="card-text text-muted small mb-0">
-                                        {{ $review->reviewer->name ?? '不明なレビュアー' }} さんから
-                                        {{ $review->reviewee->name ?? '不明な提供者' }} さんへ
+{{-- --- おすすめレビュー --- --}}
+<section class="mb-5">
+    <h2 class="text-center mb-4">おすすめレビュー</h2>
+    @if($featuredReviews->isEmpty())
+        <p class="text-center text-muted">まだレビューがありません。</p>
+    @else
+        <div class="row row-cols-1 row-cols-md-2 g-4"> {{-- レビューもグリッドレイアウトで --}}
+            @foreach($featuredReviews as $review)
+                <div class="col">
+                    {{-- ★ここを修正★ card全体をaタグで囲む --}}
+                    {{-- display_skill が存在する場合のみリンクを有効にする --}}
+                    @if($review->display_skill)
+                        <a href="{{ route('skill.detail.show', $review->display_skill->id) }}" class="card-link text-decoration-none">
+                    @endif
+                            <div class="card h-100 shadow-sm review-card"> {{-- レビューカードのデザイン --}}
+                                <div class="card-body">
+                                    <p class="card-text text-info mb-1">
+                                        <strong>提供スキル：</strong>
+                                        <span class="fw-bold">{{ $review->display_skill->title ?? '不明なスキル' }}</span>
                                     </p>
-                                    <p class="card-text text-muted small">
-                                        評価: <span class="fw-bold text-warning">{{ $review->rating }}</span>
-                                        {{-- ここに星アイコンなどを追加するとより見栄えが良いです --}}
-                                    </p>
+                                    <p class="card-text fs-5 fw-bold mb-3">"{{ $review->comment }}"</p> {{-- コメントを強調 --}}
+                                    <div class="text-end">
+                                        <p class="card-text text-muted small mb-0">
+                                            {{ $review->reviewer->name ?? '不明なレビュアー' }} さんから
+                                            {{ $review->reviewee->name ?? '不明な提供者' }} さんへ
+                                        </p>
+                                        <p class="card-text text-muted small">
+                                            評価: <span class="fw-bold text-warning">{{ $review->rating }}</span>
+                                            {{-- ここに星アイコンなどを追加するとより見栄えが良いです --}}
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        @endif
+                    @if($review->display_skill)
+                        </a>
+                    @endif
+                </div>
+            @endforeach
+        </div>
+    @endif
     </section>
     {{-- --- おすすめレビューここまで --- --}}
 
@@ -159,7 +167,18 @@
     transform: translateY(-8px); /* ホバーで少し浮き上がる */
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.7); /* ホバーで影を濃くする */
 }
-
+.card-link {
+        display: block; /* aタグをブロック要素にする */
+        height: 100%; /* 親要素の高さに合わせる */
+        color: inherit; /* リンクの色を親から継承 */
+    }
+    .card-link .card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    .card-link:hover .card {
+        transform: translateY(-5px); /* ホバーで少し浮き上がる */
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important; /* ホバーで影を強調 */
+    }
 
 </style>
 @endpush

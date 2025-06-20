@@ -173,20 +173,23 @@ class SkillController extends Controller
     }
 
     /**
-     * 新しいスキルを保存
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function store(Request $request)
-    {
+ * 新しいスキルを保存
+ *
+ * @param Request $request
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function store(Request $request)
+{
+    try {
         // バリデーションルール
-        $validatedData = $request->validate([
+        $rules = [
             'title' => 'required|string|max:255',
             'category' => 'required|string|max:100', 
             'description' => 'required|string',
-            'skill_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 画像のバリデーション
-        ]);
+            'skill_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ];
+
+        $validatedData = $request->validate($rules);
 
         $imagePath = null;
         // 画像がアップロードされた場合
@@ -197,21 +200,58 @@ class SkillController extends Controller
             } catch (\Exception $e) {
                 // ファイル保存エラーをログに出力
                 Log::error('ファイル保存エラー: ' . $e->getMessage());
-                // エラーメッセージと共にフォームに戻る
-                return back()->withErrors(['skill_image' => '画像のアップロードに失敗しました。時間をおいて再度お試しください。'])->withInput();
+                return response()->json([
+                    'success' => false,
+                    'message' => '画像のアップロードに失敗しました。時間をおいて再度お試しください。',
+                    'errors' => ['skill_image' => ['画像のアップロードに失敗しました。時間をおいて再度お試しください。']]
+                ], 500);
             }
         }
 
         // スキルを作成
-        Auth::user()->skills()->create([
+        $skill = Auth::user()->skills()->create([
             'title' => $validatedData['title'],
             'category' => $validatedData['category'],
             'description' => $validatedData['description'],
-            'image_path' => $imagePath, // 画像パスを保存
+            'image_path' => $imagePath,
         ]);
 
-        return redirect('/skill/manage')->with('message', 'スキルを登録しました。');
+        // 新しく作成されたスキルを取得（リレーションを含む）
+        $createdSkill = $skill->fresh();
+
+        // フロントエンドが期待する画像URL形式に変換
+        if ($createdSkill->image_path && !str_starts_with($createdSkill->image_path, 'http')) {
+            $createdSkill->image_path = Storage::url($createdSkill->image_path);
+        }
+        // 画像パスがnullの場合、空文字列を返す
+        if ($createdSkill->image_path === null) {
+            $createdSkill->image_path = '';
+        }
+
+        // 新規登録成功時
+        return response()->json([
+            'success' => true,
+            'message' => 'スキルが正常に登録されました。',
+            'skill' => $createdSkill->toArray()
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::warning('Skill creation validation failed for user ' . Auth::id() . ': ' . $e->getMessage(), ['errors' => $e->errors()]);
+        // バリデーションエラー時
+        return response()->json([
+            'success' => false,
+            'message' => '入力内容に問題があります。',
+            'errors' => $e->errors()
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Skill creation failed unexpectedly for user ' . Auth::id() . ': ' . $e->getMessage(), ['exception' => $e]);
+        return response()->json([
+            'success' => false,
+            'message' => 'スキルの登録に失敗しました。サーバーで予期せぬエラーが発生しました。',
+            'error_detail' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * 既存のスキルを更新
@@ -298,13 +338,14 @@ class SkillController extends Controller
     }
 
     /**
-     * スキルを削除
-     *
-     * @param int $id スキルID
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroy($id)
-    {
+ * スキルを削除
+ *
+ * @param int $id スキルID
+ * @return \Illuminate\Http\JsonResponse
+ */
+public function destroy($id)
+{
+    try {
         // ログイン中のユーザーが所有するスキルであることを確認
         $skill = Skill::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
 
@@ -316,6 +357,23 @@ class SkillController extends Controller
         // スキルを削除
         $skill->delete();
 
-        return redirect('/skill/manage')->with('message', 'スキルを削除しました。');
+        return response()->json([
+            'success' => true,
+            'message' => 'スキルを削除しました。'
+        ]);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        Log::warning('Skill not found or unauthorized access for user ' . Auth::id() . ' and skill ID ' . $id);
+        return response()->json([
+            'success' => false,
+            'message' => 'スキルが見つからないか、削除する権限がありません。'
+        ], 404);
+    } catch (\Exception $e) {
+        Log::error('Skill deletion failed unexpectedly for user ' . Auth::id() . ' and skill ID ' . $id . ': ' . $e->getMessage(), ['exception' => $e]);
+        return response()->json([
+            'success' => false,
+            'message' => 'スキルの削除に失敗しました。サーバーで予期せぬエラーが発生しました。'
+        ], 500);
     }
+}
 }

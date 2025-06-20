@@ -44,7 +44,7 @@
                         </li>
                     @elseif (Auth::user()->isModerator())
                         <li class="nav-item">
-                            <a class="nav-link" href="/admin/reports">通報管理</a> {{-- ★ここを変更★ --}}
+                            <a class="nav-link" href="/moderator/reports">通報管理</a> {{-- ★ここを変更★ --}}
                         </li>
                     @endif
 

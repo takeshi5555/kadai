@@ -21,6 +21,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\ExportController;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
+use App\Http\Controllers\Moderator\ModeratorReportsController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -41,6 +42,7 @@ Route::get('/', function () {
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout'); 
+Route::post('/moderator/logout', [AuthController::class, 'logout'])->name('moderator.logout');
 
 // Signup Pages (新規登録関連ページ)
 Route::get('/signup', [AuthController::class, 'showSignup'])->name('signup');
@@ -133,16 +135,31 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
         Route::resource('skills', SkillsController::class)->except(['show', 'create', 'store']); // スキル管理
     });
 
-    // --- 管理者 (admin) またはモデレーター (moderator) がアクセスできるルートグループ ---
-    // Gateの定義を変更したため、/admin/reports は管理者もアクセス可能になる
-    Route::middleware('can:access-moderator-report-management')->group(function () {
-        Route::resource('reports', ReportsController::class)->only(['index', 'show', 'destroy']);
-        Route::put('reports/{report}', [ReportsController::class, 'update'])->name('reports.update');
-        Route::put('users/{user}/ban', [UsersController::class, 'toggleBan'])->name('users.toggleBan');
-        Route::post('reports/{report}/warn', [ReportsController::class, 'warnUser'])->name('reports.warnUser');
-    });
 
+    Route::middleware('can:access-admin-page')->group(function () {
+    Route::resource('reports', ReportsController::class)->only(['index', 'show', 'destroy']);
+    Route::put('reports/{report}', [ReportsController::class, 'update'])->name('reports.update'); // この name は admin.reports.update になります
+    Route::post('reports/{report}/warn', [ReportsController::class, 'warnUser'])->name('reports.warnUser'); // この name は admin.reports.warnUser になります
 });
+});
+
+Route::middleware(['auth'])->prefix('moderator')->name('moderator.')->group(function () {
+    Route::middleware('can:access-moderator-report-management')->group(function () {
+
+        // レポート管理
+        Route::resource('reports', ModeratorReportsController::class)->only(['index', 'show', 'destroy']);
+        Route::put('reports/{report}', [ModeratorReportsController::class, 'update'])->name('reports.update');
+        // モデレーターもユーザーのBAN/BAN解除ができるようにする場合
+        Route::put('users/{user}/ban', [UsersController::class, 'toggleBan'])->name('users.toggleBan');
+        // モデレーターも警告機能を使えるようにする場合
+        Route::post('reports/{report}/warn', [ModeratorReportsController::class, 'warnUser'])->name('reports.warnUser');
+    });
+});
+
+
+
+
+
 
 // Google認証ページへのリダイレクト
 Route::get('/auth/google/redirect', function () {

@@ -85,7 +85,14 @@
                         <li class="nav-item">
                             <a class="nav-link" href="/main">メインページへ</a>
                         </li>
-                        
+                                            <li class="nav-item">
+                        <a href="#" class="nav-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                            ログアウト
+                        </a>
+                        <form id="logout-form" action="/logout" method="POST" style="display: none;">
+                            @csrf
+                        </form>
+                    </li>
                         @auth('admin')
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">

@@ -10,8 +10,15 @@ class Message extends Model
 {
     use HasFactory;
     // ★ ここに receiver_id と sent_at を追加
-    protected $fillable = ['matching_id', 'sender_id', 'receiver_id', 'content', 'sent_at', 'created_at', 'updated_at'];
+    protected $fillable = ['matching_id', 'sender_id', 'receiver_id', 'content',  'read_at','sent_at', 'created_at', 'updated_at'];
 
+    protected $dates = [
+        'read_at', // ★ここに追加★
+    ];
+     protected $casts = [
+        'read_at' => 'datetime', // ★ここに追加: datetime型としてキャスト★
+        // 'sent_at' => 'datetime', // もしsent_atも使っているならここに追加
+    ];
     public function sender()
     {
         return $this->belongsTo(User::class, 'sender_id');

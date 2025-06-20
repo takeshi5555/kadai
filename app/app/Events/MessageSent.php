@@ -9,7 +9,7 @@ use Illuminate\Broadcasting\PrivateChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use App\Message;
+use App\Models\Message; // ★ここを修正：App\Message から App\Models\Message に変更
 use App\Models\User;
 
 class MessageSent implements ShouldBroadcast

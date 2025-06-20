@@ -128,4 +128,10 @@ class Matching extends Model
     {
         return $this->hasMany(Review::class, 'matching_id');
     }
+
+public function messages()
+    {
+        return $this->hasMany(Message::class, 'matching_id');
+    }
+
 }

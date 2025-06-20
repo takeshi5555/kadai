@@ -61,15 +61,22 @@
 
                         {{-- マッチング申し込み/マイページへのリンクボタン --}}
                         <div class="d-grid gap-2 mt-4">
-                            @if (Auth::check() && Auth::id() !== $skill->user_id) {{-- ログインしていて、かつ自分のスキルではない場合 --}}
-                                <a href="/matching/apply/{{ $skill->id }}" class="btn btn-success btn-lg">マッチングを申し込む</a>
-                                <a href="{{ route('skill.search') }}" class="btn btn-secondary btn-lg">スキル検索に戻る</a>
-                            @else {{-- 自分のスキルである場合、またはログインしていない場合 --}}
-                                <div class="alert alert-info text-center" role="alert">
-                                    これはあなたが提供しているスキルです。
+                            @auth {{-- ログインしている場合 --}}
+                                @if (Auth::id() === $skill->user_id) {{-- ログインユーザーがこのスキルの提供者である場合 --}}
+                                    <div class="alert alert-info text-center" role="alert">
+                                        これはあなたが提供しているスキルです。
+                                    </div>
+                                    <a href="{{ route('mypage.index') }}" class="btn btn-secondary btn-lg">マイページに戻る</a>
+                                @else {{-- ログインユーザーがこのスキルの提供者ではない場合 --}}
+                                    <a href="/matching/apply/{{ $skill->id }}" class="btn btn-success btn-lg">マッチングを申し込む</a>
+                                    <a href="{{ route('skill.search') }}" class="btn btn-secondary btn-lg">スキル検索に戻る</a>
+                                @endif
+                            @else {{-- ログインしていない場合 --}}
+                                <div class="alert alert-warning text-center" role="alert">
+                                    マッチングを申し込むには<a href="{{ route('login') }}">ログイン</a>してください。
                                 </div>
-                                <a href="{{ route('mypage.index') }}" class="btn btn-secondary btn-lg">マイページに戻る</a>
-                            @endif
+                                <a href="{{ route('skill.search') }}" class="btn btn-secondary btn-lg">スキル検索に戻る</a>
+                            @endauth
                         </div>
                     </div> {{-- .card-body --}}
                 </div> {{-- .card.shadow-sm.mb-4 (スキル詳細カード) --}}
@@ -79,14 +86,16 @@
                     <div class="card shadow-sm mt-4">
                         <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">スキル提供者情報</h5>
-                            @if (Auth::check() && Auth::id() !== $skill->user->id)
-                                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#reportModal"
-                                    data-reportable-type="App\Models\User"
-                                    data-reportable-id="{{ $skill->user->id }}"
-                                    data-reported-user-id="{{ $skill->user->id }}">
-                                    <i class="bi bi-flag me-1"></i> {{ $skill->user->name }}さんを通報
-                                </button>
-                            @endif
+                            @auth {{-- ログインしている場合のみ通報ボタンを表示 --}}
+                                @if (Auth::id() !== $skill->user->id) {{-- 自分のスキルではない場合のみ通報ボタンを表示 --}}
+                                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#reportModal"
+                                        data-reportable-type="App\Models\User"
+                                        data-reportable-id="{{ $skill->user->id }}"
+                                        data-reported-user-id="{{ $skill->user->id }}">
+                                        <i class="bi bi-flag me-1"></i> {{ $skill->user->name }}さんを通報
+                                    </button>
+                                @endif
+                            @endauth
                         </div>
                         <div class="card-body">
                             <p class="card-text"><strong>提供者名：</strong> {{ $skill->user->name }}</p>
