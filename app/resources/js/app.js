@@ -123,3 +123,22 @@ function unsubscribe() {
         console.error('Error retrieving token to unsubscribe. ', err);
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    var navbarCollapse = document.getElementById('navbarNav'); // ナビバーのID
+
+    if (navbarCollapse) {
+        navbarCollapse.addEventListener('shown.bs.collapse', function () {
+            var badges = document.querySelectorAll('.navbar-collapse .nav-item .nav-link.position-relative .badge');
+            badges.forEach(function(badge) {
+                badge.style.position = 'static';
+                badge.style.marginLeft = '5px';
+                badge.style.transform = 'none';
+                badge.style.display = 'inline-block';
+                badge.style.top = 'auto';
+                badge.style.right = 'auto';
+            });
+        });
+        // 必要であれば、hidden.bs.collapse イベントの処理もここに追加
+    }
+});

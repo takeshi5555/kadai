@@ -69,43 +69,45 @@
 
     <hr class="my-5">
 
-    {{-- --- 新着スキル --- --}}
-    <section class="mb-5">
-        <h2 class="text-center mb-4">新着スキル</h2>
-        @if($newSkills->isEmpty())
-            <p class="text-center text-muted">新着スキルはまだありません。</p>
-        @else
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {{-- レスポンシブなグリッドレイアウト --}}
-                @foreach($newSkills as $skill)
-                    <div class="col">
-                        <a href="{{ url('/skill/detail/' . $skill->id) }}" class="card h-100 shadow-sm text-decoration-none text-body skill-card-link"> {{-- カード全体をリンクに --}}
-                            @if($skill->image_path)
-    {{-- 画像が存在する場合のみ表示 --}}
-    {{-- ★この下の行が削除されるか、別の行が削除されるかのどちらかです★ --}}
-    <img src="{{ asset('storage/' . $skill->image_path) }}" 
-        class="card-img-top" 
-        alt="{{ $skill->title }}" 
-        style="height: 180px; object-fit: cover;"
-        onload="console.log('画像読み込み成功')"
-        onerror="console.log('画像読み込み失敗'); this.style.display='none';">
-        @else
-        <img src="{{ asset('images/categories/default.png') }}" class="card-img-top"  alt="デフォルトスキル画像"  style="height: 180px; object-fit: cover;">
-        @endif
-        <div class="card-body">
-            <h3 class="card-title h5 mb-2">{{ $skill->title }}</h3>
-            <p class="card-text small text-muted mb-2">
-                <strong>カテゴリ:</strong> {{ $skill->category }}<br>
-                <strong>提供者:</strong> {{ $skill->user->name ?? '不明なユーザー' }}
-            </p>
-            <p class="card-text mb-0">{{ Str::limit($skill->description, 100) }}</p>
+{{-- --- 新着スキル --- --}}
+<section class="mb-5">
+    <h2 class="text-center mb-4">新着スキル</h2>
+    @if($newSkills->isEmpty())
+        <p class="text-center text-muted">新着スキルはまだありません。</p>
+    @else
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach($newSkills as $skill)
+                <div class="col">
+                    <a href="{{ url('/skill/detail/' . $skill->id) }}" class="card h-100 shadow-sm text-decoration-none text-body skill-card-link">
+                        @if($skill->image_path)
+                            {{-- スキルに画像が設定されている場合 --}}
+                            <img src="{{ asset('storage/' . $skill->image_path) }}" 
+                                class="card-img-top" 
+                                alt="{{ $skill->title }}" 
+                                style="height: 180px; object-fit: cover;"
+                                onerror="this.onerror=null; this.src='{{ $skill->default_category_image_path }}';">
+                        @else
+                            {{-- スキルに画像が設定されていない場合 --}}
+                            <img src="{{ $skill->default_category_image_path }}" 
+                                class="card-img-top" 
+                                alt="カテゴリ: {{ $skill->category ?? '不明' }} のデフォルト画像" 
+                                style="height: 180px; object-fit: cover;">
+                        @endif
+                        <div class="card-body">
+                            <h3 class="card-title h5 mb-2">{{ $skill->title }}</h3>
+                            <p class="card-text small text-muted mb-2">
+                                <strong>カテゴリ:</strong> {{ $skill->category }}<br>
+                                <strong>提供者:</strong> {{ $skill->user->name ?? '不明なユーザー' }}
+                            </p>
+                            <p class="card-text mb-0">{{ Str::limit($skill->description, 100) }}</p>
+                        </div>
+                    </a>
+                </div>
+            @endforeach
         </div>
-    </a>
-</div>
-@endforeach
-</div>
-        @endif
-    </section>
-    {{-- --- 新着スキルここまで --- --}}
+    @endif
+</section>
+{{-- --- 新着スキルここまで --- --}}
 
     <hr class="my-5">
 

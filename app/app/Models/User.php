@@ -47,6 +47,38 @@ class User extends Authenticatable
     }
 
 
+
+     // ========== 通知カウント用アクセサここから ==========
+
+    /**
+     * 未読メッセージ数を取得するアクセサ
+     *
+     * @return int
+     */
+    public function getUnreadMessageCountAttribute()
+    {
+        // 'receivedMessages' リレーションを使用し、'read_at' が null のメッセージをカウント
+        return $this->receivedMessages()->whereNull('read_at')->count();
+    }
+
+    /**
+     * 未確認のマッチング数を取得するアクセサ
+     *
+     * @return int
+     */
+    public function getUnconfirmedMatchingCountAttribute()
+    {
+        // ユーザーが提供したスキルに関連する未確認マッチング
+        $offeredPendingCount = $this->offeredMatchings()->where('status', 0)->count();
+
+        // ユーザーがリクエストしたスキルに関連する未確認マッチング
+        $requestedPendingCount = $this->requestedMatchings()->where('status', 0)->count();
+
+        // 両方を合計して返す
+        return $offeredPendingCount + $requestedPendingCount;
+    }
+
+    // ========== 通知カウント用アクセサここまで ==========
     // マッチング履歴のリレーション
     // SQLを見ると、matchingsテーブルには`offer_user_id`と`request_user_id`があります。
     // どちらのユーザーから見てもマッチング履歴として取得できるようにリレーションを定義します。

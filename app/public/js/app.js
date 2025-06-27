@@ -97,7 +97,7 @@ function isVersionServiceProvider(provider) {
 }
 
 const name$q = "@firebase/app";
-const version$1 = "0.13.0";
+const version$1 = "0.13.1";
 
 /**
  * @license
@@ -168,7 +168,7 @@ const name$2 = "@firebase/ai";
 const name$1 = "@firebase/firestore-compat";
 
 const name = "firebase";
-const version = "11.8.0";
+const version = "11.9.0";
 
 /**
  * @license
@@ -8899,7 +8899,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 var name = "firebase";
-var version = "11.8.1";
+var version = "11.9.1";
 
 /**
  * @license
@@ -9320,7 +9320,7 @@ class d {
     this.namespace = e;
   }
 }
-function g(n) {
+function w(n) {
   try {
     new n();
   } catch (e) {
@@ -9406,7 +9406,7 @@ class u extends l {
     return this.subscription.bind(e, t), this;
   }
 }
-class b extends u {
+class f extends u {
   /**
    * Send a whisper event to other clients in the channel.
    */
@@ -9417,7 +9417,7 @@ class b extends u {
     ), this;
   }
 }
-class w extends u {
+class g extends u {
   /**
    * Send a whisper event to other clients in the channel.
    */
@@ -9428,7 +9428,7 @@ class w extends u {
     ), this;
   }
 }
-class y extends b {
+class y extends f {
   /**
    * Register a callback to be called anytime the member list changes.
    */
@@ -9463,7 +9463,7 @@ class y extends b {
     }), this;
   }
 }
-class f extends l {
+class b extends l {
   /**
    * Create a new class instance.
    */
@@ -9539,7 +9539,7 @@ class f extends l {
     )), (!t || this.listeners[e].length === 0) && (this.events[e] && (this.socket.removeListener(e, this.events[e]), delete this.events[e]), delete this.listeners[e]);
   }
 }
-class v extends f {
+class v extends b {
   /**
    * Send a whisper event to other clients in the channel.
    */
@@ -9703,7 +9703,7 @@ const c = class c {
    */
   csrfToken() {
     var e, t;
-    return ((e = window == null ? void 0 : window.Laravel) == null ? void 0 : e.csrfToken) ?? this.options.csrfToken ?? ((t = document == null ? void 0 : document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : t.getAttribute("content")) ?? null;
+    return typeof window < "u" && ((e = window.Laravel) != null && e.csrfToken) ? window.Laravel.csrfToken : this.options.csrfToken ? this.options.csrfToken : typeof document < "u" && typeof document.querySelector == "function" ? ((t = document.querySelector('meta[name="csrf-token"]')) == null ? void 0 : t.getAttribute("content")) ?? null : null;
   }
 };
 c._defaultOptions = {
@@ -9770,7 +9770,7 @@ class o extends i {
    * Get a private channel instance by name.
    */
   privateChannel(e) {
-    return this.channels["private-" + e] || (this.channels["private-" + e] = new b(
+    return this.channels["private-" + e] || (this.channels["private-" + e] = new f(
       this.pusher,
       "private-" + e,
       this.options
@@ -9780,7 +9780,7 @@ class o extends i {
    * Get a private encrypted channel instance by name.
    */
   encryptedPrivateChannel(e) {
-    return this.channels["private-encrypted-" + e] || (this.channels["private-encrypted-" + e] = new w(
+    return this.channels["private-encrypted-" + e] || (this.channels["private-encrypted-" + e] = new g(
       this.pusher,
       "private-encrypted-" + e,
       this.options
@@ -9840,7 +9840,7 @@ class I extends i {
     this.socket = e(
       this.options.host ?? void 0,
       this.options
-    ), this.socket.on("reconnect", () => {
+    ), this.socket.io.on("reconnect", () => {
       Object.values(this.channels).forEach((t) => {
         t.subscribe();
       });
@@ -9868,7 +9868,7 @@ class I extends i {
    * Get a channel instance by name.
    */
   channel(e) {
-    return this.channels[e] || (this.channels[e] = new f(
+    return this.channels[e] || (this.channels[e] = new b(
       this.socket,
       e,
       this.options
@@ -10016,7 +10016,7 @@ class E {
       this.connector = new I(this.options);
     else if (this.options.broadcaster === "null")
       this.connector = new p(this.options);
-    else if (typeof this.options.broadcaster == "function" && g(this.options.broadcaster))
+    else if (typeof this.options.broadcaster == "function" && w(this.options.broadcaster))
       this.connector = new this.options.broadcaster(this.options);
     else
       throw new Error(
@@ -32273,6 +32273,24 @@ function unsubscribe() {
     console.error('Error retrieving token to unsubscribe. ', err);
   });
 }
+document.addEventListener('DOMContentLoaded', function () {
+  var navbarCollapse = document.getElementById('navbarNav'); // ナビバーのID
+
+  if (navbarCollapse) {
+    navbarCollapse.addEventListener('shown.bs.collapse', function () {
+      var badges = document.querySelectorAll('.navbar-collapse .nav-item .nav-link.position-relative .badge');
+      badges.forEach(function (badge) {
+        badge.style.position = 'static';
+        badge.style.marginLeft = '5px';
+        badge.style.transform = 'none';
+        badge.style.display = 'inline-block';
+        badge.style.top = 'auto';
+        badge.style.right = 'auto';
+      });
+    });
+    // 必要であれば、hidden.bs.collapse イベントの処理もここに追加
+  }
+});
 
 /***/ }),
 
@@ -32320,7 +32338,7 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 window.Pusher = __webpack_require__(/*! pusher-js */ "./node_modules/pusher-js/dist/web/pusher.js");
 window.Echo = new laravel_echo__WEBPACK_IMPORTED_MODULE_0__["default"]({
   broadcaster: 'pusher',
-  key: "base64:UUSxtpswBnFt00y9aiz7Kf7RdSYLLzIIPoGshh01jUU=",
+  key: "base64:hH3Ef4b4SI320/U5ShqK7rb+vNE0NntIITUTokWv3CU=",
   // これは .env の APP_KEY (MIX_PUSHER_APP_KEY経由)
   wsHost: window.location.hostname,
   wsPort: 6001,
