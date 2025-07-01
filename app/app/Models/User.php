@@ -7,10 +7,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Log;
+use NotificationChannels\WebPush\HasPushSubscriptions;
+use App\Models\WebPushSubscription;
+
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable,HasPushSubscriptions;
 
     /**
      * The attributes that are mass assignable.
@@ -174,6 +177,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Review::class, 'reviewer_id');
     }
+    public function webPushSubscriptions()
+{
+    return $this->hasMany(WebPushSubscription::class);
+}
     
 
 

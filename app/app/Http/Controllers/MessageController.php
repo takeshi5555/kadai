@@ -9,6 +9,8 @@ use App\Models\Message;
 use App\Events\MessageSent;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log; // 必要に応じてログのため
+use App\Models\User;
+use App\Notifications\MessageReceivedNotification;
 
 class MessageController extends Controller
 {
@@ -67,6 +69,17 @@ class MessageController extends Controller
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+        
+        
+try {
+    $receiver = User::find($receiverId);
+    if ($receiver) {
+        $receiver->notify(new MessageReceivedNotification($message));
+    }
+} catch (\Throwable $e) {
+    Log::error('通知送信エラー: ' . $e->getMessage());
+    // 通知失敗してもメッセージ送信自体は止めない
+}
 
         broadcast(new MessageSent($message, Auth::user()))->toOthers();
 

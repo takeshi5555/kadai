@@ -32,7 +32,7 @@ services:
       - app_vendor:/var/www/html/vendor
       - app_node_modules:/var/www/html/node_modules
       # 一時ファイルとキャッシュも分離
-      #- app_storage:/var/www/html/storage
+      # - app_storage:/var/www/html/storage
       - ./app/storage:/var/www/html/storage:cached
       - app_bootstrap_cache:/var/www/html/bootstrap/cache
       # 設定ファイル
@@ -43,25 +43,29 @@ services:
     depends_on:
       - db
       - redis
+    # --- ここから修正点 ---
+    # .env ファイルをコンテナの環境変数として読み込むように追加
+    env_file:
+      - ./.env
     environment:
       PHP_INI_SET: "display_errors=Off"
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      # --- ここを修正 ---
       BROADCAST_DRIVER: redis
-      # Laravel Echo Server (ローカル) の認証設定
-      # ここで設定する PUSHER_APP_KEY は laravel-echo-server.json と同じ値にすること
-      PUSHER_APP_KEY: ${APP_KEY} # ホストの .env の APP_KEY を使う
-      PUSHER_APP_ID: some_id # 必要に応じて任意のID (laravel-echo-serverでは重要ではないがLaravel側で必要)
-      PUSHER_APP_SECRET: some_secret # 必要に応じて任意のシークレット (laravel-echo-serverでは重要ではないがLaravel側で必要)
-      PUSHER_HOST: echo-server # LaravelがEcho Serverにイベントを送る際のホスト名（Docker内部のサービス名）
+      # PUSHER_* の変数は .env から env_file 経由で読み込まれるため、
+      # ここで個別に定義する必要はありませんが、Laravel Mix / Vite の参照のために残す場合は
+      # そのまま ${VAR_NAME} 形式で指定します。
+      PUSHER_APP_KEY: ${PUSHER_APP_KEY}
+      PUSHER_APP_ID: ${PUSHER_APP_ID}
+      PUSHER_APP_SECRET: ${PUSHER_APP_SECRET}
+      PUSHER_HOST: echo-server
       PUSHER_PORT: 6001
       PUSHER_SCHEME: http
-      # JavaScriptに渡すEchoの設定
-      MIX_PUSHER_APP_KEY: ${APP_KEY} # Laravel Mix でビルドする app.js に埋め込むキー
-      VITE_PUSHER_APP_KEY: ${APP_KEY} # Vite でビルドする app.js に埋め込むキー
-      # --- 修正ここまで ---
-      APP_KEY: ${APP_KEY}
+      MIX_PUSHER_APP_KEY: ${MIX_PUSHER_APP_KEY}
+      VITE_PUSHER_APP_KEY: ${VITE_PUSHER_APP_KEY}
+      # APP_KEY は env_file で読み込まれるため、ここでの重複定義は削除
+      # VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY も env_file で読み込まれるため削除
+    # --- 修正ここまで ---
 
   db:
     container_name: curriculum-db
@@ -105,12 +109,10 @@ services:
     build:
       context: .
       dockerfile: docker/echo-server/Dockerfile
-    # --- ここを修正 ---
     command: laravel-echo-server start --no-daemon --force --debug --host=0.0.0.0 --port=6001 --authHost=http://nginx:80 --redisHost=redis --redisPort=6379 --config=/var/www/html/laravel-echo-server.json
     volumes:
       - ./app:/var/www/html:cached
       - app_node_modules:/var/www/html/node_modules
-    # --- 修正ここまで ---
     ports:
       - "6001:6001"
     environment:

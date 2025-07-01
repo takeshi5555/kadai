@@ -1,5 +1,5 @@
 # 使用イメージの指定
-FROM php:8.1-fpm
+FROM php:8.2-fpm
 
 # composer イメージ内から特定のファイルをコピー
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -17,14 +17,15 @@ RUN apt-get update && \
     libjpeg-dev\
     libfreetype6-dev \
     libzip-dev \
+    libgmp-dev\
     && rm -rf /var/lib/apt/lists/*
 
 # OPcacheを有効化
 RUN docker-php-ext-install opcache
 
 # PHP 拡張機能をインストール
-RUN docker-php-ext-install pdo_mysql gd zip && \
-    docker-php-ext-enable gd
+RUN docker-php-ext-install pdo_mysql gd zip gmp && \
+    docker-php-ext-enable gd gmp
 # PECL 経由で Redis 拡張をインストール
 RUN pecl install redis \
     && docker-php-ext-enable redis \

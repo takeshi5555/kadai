@@ -35,5 +35,13 @@ return [
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
+     'webpush' => [
+        'vapid' => [
+            'subject' => env('VAPID_SUBJECT'), // 例: mailto:your-email@example.com
+            'public_key' => env('VAPID_PUBLIC_KEY'),
+            'private_key' => env('VAPID_PRIVATE_KEY'),
+            'pem_file' => env('VAPID_PEM_FILE'), // PEMファイルを使用する場合 (通常は不要)
+        ],
+    ],
 
 ];

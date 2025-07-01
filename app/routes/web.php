@@ -21,7 +21,11 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\ExportController;
 use Laravel\Socialite\Facades\Socialite;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Moderator\ModeratorReportsController;
+use NotificationChannels\WebPush\PushSubscription;
+use App\Notifications\TestPushNotification;
+use App\Http\Controllers\NotificationController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -36,6 +40,16 @@ use App\Http\Controllers\Moderator\ModeratorReportsController;
 // Welcome / Root Page
 Route::get('/', function () {
     return view('welcome');
+});
+Route::middleware('auth')->group(function () {
+    // 通知数取得のルート
+    Route::get('/api/notifications/count', 'App\Http\Controllers\NotificationController@getNotificationCount');
+    
+    // メッセージ既読処理
+    Route::post('/api/notifications/message/read', 'App\Http\Controllers\NotificationController@markMessageAsRead');
+    
+    // マッチング確認処理
+    Route::post('/api/notifications/matching/confirm', 'App\Http\Controllers\NotificationController@confirmMatching');
 });
 
 // Authentication Pages (認証関連ページ)
@@ -72,9 +86,19 @@ Route::get('/main', [MainController::class, 'index'])->name('main.index'); // `m
 Route::get('/skill/search', [SkillController::class, 'search'])->name('skill.search');
 Route::get('/skill/detail/{id}', [SkillController::class, 'show'])->name('skill.detail.show'); // 名前を追加
 
+Route::get('/log-test', function () {
+    Log::debug('これはログのテストです：' . now());
+    return 'ログ出力しました';
+});
+
 // Authenticated Routes (認証済みユーザーのみアクセス可能)
 Route::middleware(['auth'])->group(function () {
 
+
+      
+
+    
+    // --- Web Push通知関連ルートの追加終了 ---
     // My Page (マイページ) - ★ここが追加・修正のポイント★
     Route::get('/mypage', [MypageController::class, 'index'])->name('mypage.index'); // MypageControllerをここで使用
     Route::put('/mypage/user-info', [App\Http\Controllers\MypageController::class, 'updateUserInfo'])->name('mypage.updateUserInfo');
