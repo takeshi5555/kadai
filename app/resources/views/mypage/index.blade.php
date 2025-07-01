@@ -85,67 +85,70 @@
     @endif
 
     {{-- 管理者からの警告カード --}}
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-danger text-white">
-            <h2 class="h5 mb-0">あなたへの管理者からの警告</h2>
-        </div>
-        <div class="card-body">
-            @if($unreadWarnings->isEmpty() && $readWarnings->isEmpty())
-                <p class="text-muted">現在、あなたへの警告はありません。</p>
-            @else
-                {{-- 未確認の警告表示 --}}
-                @if($unreadWarnings->isNotEmpty())
-                    <h4 class="h6 mb-3 text-danger">
-                        未確認の警告 ({{ $unreadWarnings->count() }} 件)
-                    </h4>
-                    
-                    @foreach($unreadWarnings as $warning)
-                        <div class="alert alert-danger mb-3" role="alert">
-                            <h5 class="alert-heading h6 mb-1">
-                                新しい警告 ({{ ($warning->warned_at ?? $warning->created_at)->format('Y年m月d日 H:i') }})
-                            </h5>
-                            
-                            <p class="mb-1">
-                                <strong>管理者からのメッセージ:</strong> {{ $warning->message }}
-                            </p>
-
-                            @if($warning->report)
-                                @if($warning->report->reason)
-                                    <p class="mb-1">
-                                        <strong>通報カテゴリ:</strong> {{ $warning->report->reason->reason_text }}
-                                    </p>
-                                @endif
-                                
-                                @if($warning->report->subReason)
-                                    <p class="mb-1">
-                                        <strong>通報詳細:</strong> {{ $warning->report->subReason->reason_text }}
-                                    </p>
-                                @endif
-                                
-                                @if($warning->report->comment)
-                                    <p class="mb-1">
-                                        <strong>ユーザー通報時のコメント:</strong> {{ $warning->report->comment }}
-                                    </p>
-                                @endif
-                            @endif
-
-                            <hr>
-                            <form action="{{ route('warning.mark_as_read', $warning) }}" method="POST" class="text-end">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
-                                    この警告を確認済みにする
-                                </button>
-                            </form>
-                        </div>
-                    @endforeach
-                @endif
-
-                <p class="text-info small mt-3">
-                    ※これらの警告は、過去の行為に対して管理者から通知されたものです。
-                </p>
-            @endif
-        </div>
+@if($unreadWarnings->isNotEmpty() || $readWarnings->isNotEmpty())
+<div class="card mb-4 shadow-sm">
+    <div class="card-header bg-danger text-white">
+        <h2 class="h5 mb-0">あなたへの管理者からの警告</h2>
     </div>
+    <div class="card-body">
+        @if($unreadWarnings->isEmpty() && $readWarnings->isEmpty())
+            {{-- このブロックは、上記の @if 条件によってほとんど表示されなくなるが、念のため残しておく --}}
+            <p class="text-muted">現在、あなたへの警告はありません。</p>
+        @else
+            {{-- 未確認の警告表示 --}}
+            @if($unreadWarnings->isNotEmpty())
+                <h4 class="h6 mb-3 text-danger">
+                    未確認の警告 ({{ $unreadWarnings->count() }} 件)
+                </h4>
+                
+                @foreach($unreadWarnings as $warning)
+                    <div class="alert alert-danger mb-3" role="alert">
+                        <h5 class="alert-heading h6 mb-1">
+                            新しい警告 ({{ ($warning->warned_at ?? $warning->created_at)->format('Y年m月d日 H:i') }})
+                        </h5>
+                        
+                        <p class="mb-1">
+                            <strong>管理者からのメッセージ:</strong> {{ $warning->message }}
+                        </p>
+
+                        @if($warning->report)
+                            @if($warning->report->reason)
+                                <p class="mb-1">
+                                    <strong>通報カテゴリ:</strong> {{ $warning->report->reason->reason_text }}
+                                </p>
+                            @endif
+                            
+                            @if($warning->report->subReason)
+                                <p class="mb-1">
+                                    <strong>通報詳細:</strong> {{ $warning->report->subReason->reason_text }}
+                                </p>
+                            @endif
+                            
+                            @if($warning->report->comment)
+                                <p class="mb-1">
+                                    <strong>ユーザー通報時のコメント:</strong> {{ $warning->report->comment }}
+                                </p>
+                            @endif
+                        @endif
+
+                        <hr>
+                        <form action="{{ route('warning.mark_as_read', $warning) }}" method="POST" class="text-end">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                この警告を確認済みにする
+                            </button>
+                        </form>
+                    </div>
+                @endforeach
+            @endif
+
+            <p class="text-info small mt-3">
+                ※これらの警告は、過去の行為に対して管理者から通知されたものです。
+            </p>
+        @endif
+    </div>
+</div>
+@endif {{-- ここに追記 --}}
 
 {{-- スキル管理カード --}}
 <div class="card mb-4 shadow-sm">
@@ -164,16 +167,12 @@
                     <div class="col">
                         <a href="{{ route('skill.detail.show', $skill->id) }}" 
                            class="card h-100 shadow-sm text-decoration-none text-body skill-card-link"> {{-- カード全体をリンクに --}}
-                            @if($skill->image_path)
-                                {{-- 画像が存在する場合のみ表示 --}}
-                                <img src="{{ asset('storage/' . $skill->image_path) }}" 
-                                    class="card-img-top" 
-                                    alt="{{ $skill->title }}" 
-                                    style="height: 180px; object-fit: cover;">
-                            @else
-                                {{-- 画像がない場合はデフォルト画像を表示 --}}
-                                <img src="{{ asset('images/categories/default.png') }}" class="card-img-top" alt="デフォルトスキル画像" style="height: 180px; object-fit: cover;">
-                            @endif
+                            {{-- ★ここを修正★ image_urlアクセサを使用 --}}
+                            <img src="{{ $skill->image_url }}" 
+                                 class="card-img-top" 
+                                 alt="{{ $skill->title }}" 
+                                 style="height: 180px; object-fit: cover;">
+                            
                             <div class="card-body">
                                 <h3 class="card-title h6 mb-2">
                                     {{ $skill->title }} ({{ $skill->category }})
@@ -423,6 +422,289 @@
 
 @push('styles')
 <style>
+
+/* public/css/app.css */
+
+/* CSSカスタムプロパティ（変数）を再定義/確認 - 元の濃い色調 */
+:root {
+    --skillswap-primary:rgb(110, 161, 209); /* 新しいメインブルー（少し落ち着いた青） */
+    --skillswap-primary-dark:rgb(121, 165, 203); /* メインカラーより濃い青（ホバー用やアクセントに） */
+    --skillswap-text-light: #ffffff; /* 明るい背景用テキスト（白） */
+    --skillswap-text-dark: #333333; /* 暗い背景用テキスト（濃いグレー） */
+    --skillswap-bg-light: #f8f9fa; /* 薄い背景色 */
+    --skillswap-border: #dee2e6; /* ボーダー色 */
+
+    /* ステータス・警告に限定して使用する色（青と赤に集約） */
+    --status-success: var(--skillswap-primary-dark); /* 承認ボタン: ブランドの濃い青 */
+    --status-success-light: #C5E1F7; /* 承認バッジ/背景用: 薄い青 */
+
+    --status-warning: #E26B6B; /* 申請取り消しボタン: 赤のバリエーション（少し明るめ） */
+    --status-warning-dark: #CD5C5C;
+    --status-warning-light: #F8D7DA; /* 申請取り消しバッジ/背景用: 薄い赤 */
+
+    --status-danger: #dc3545; /* 拒否ボタン/警告: Bootstrapの赤に近い */
+    --status-danger-dark: #c82333;
+    --status-danger-light: #f8d7da; /* 薄い赤 */
+
+    --status-info: #6c757d; /* 完了ボタン/その他情報ボタン: Bootstrapのミディアムグレー */
+    --status-info-dark: #5a6268;
+    --status-info-light: #e2e6ea; /* 完了バッジ/情報アラート背景用: 薄いグレー */
+
+    /* 保留中の状態を示す色 */
+    --status-pending: #6c757d; /* 保留中バッジ: Bootstrapのミディアムグレー */
+    --status-pending-light: #e2e6ea; /* 保留中のバッジ背景用 */
+}
+
+/* 汎用的なリンクカラー */
+a {
+    color: var(--skillswap-primary-dark); /* リンクは濃い青 */
+    text-decoration: none;
+}
+a:hover {
+    color: var(--skillswap-primary); /* ホバー時はメインの青 */
+    text-decoration: underline;
+}
+
+/* カードの基本的なスタイル */
+.card {
+    border-radius: 10px;
+    border: 1px solid var(--skillswap-border);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.card-body {
+    padding: 2.5rem;
+}
+
+/* カードヘッダーの背景色を統一 */
+.card-header {
+    background-color: var(--skillswap-primary-dark) !important; /* 少し濃い青をヘッダーに */
+    color: var(--skillswap-text-light) !important;
+    font-weight: bold;
+    border-bottom: 1px solid var(--skillswap-primary-dark) !important;
+}
+
+/* ただし、警告カードのヘッダーは赤を保持 */
+.card-header.bg-danger {
+    background-color: var(--status-danger) !important;
+    border-color: var(--status-danger) !important;
+}
+
+/* 編集ボタン（カードヘッダー内のbtn-light） */
+.card-header .btn-light {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+    border-color: rgba(255, 255, 255, 0.3) !important;
+    color: var(--skillswap-text-light) !important;
+}
+.card-header .btn-light:hover {
+    background-color: rgba(255, 255, 255, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* モーダルのヘッダー */
+.modal-header {
+    background-color: var(--skillswap-primary-dark); /* 少し濃い青をヘッダーに */
+    color: var(--skillswap-text-light);
+    border-bottom: 1px solid var(--skillswap-primary-dark);
+}
+.modal-header .btn-close {
+    filter: invert(1);
+}
+
+/* メインのアクションボタン (btn-primary) */
+.btn-primary {
+    background-color: var(--skillswap-primary); /* メインの青 */
+    border-color: var(--skillswap-primary);
+    color: var(--skillswap-text-light);
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.btn-primary:hover {
+    background-color: var(--skillswap-primary-dark); /* ホバー時は濃い青 */
+    border-color: var(--skillswap-primary-dark);
+    color: var(--skillswap-text-light);
+}
+
+/* btn-secondary の調整（落ち着いたグレー） */
+.btn-secondary {
+    background-color: var(--status-info); /* status-infoを共通のグレーとして使用 */
+    border-color: var(--status-info);
+    color: var(--skillswap-text-light);
+}
+.btn-secondary:hover {
+    background-color: var(--status-info-dark);
+    border-color: var(--status-info-dark);
+}
+
+/* Googleログインボタンは現状維持が良いでしょう */
+.btn-google {
+    background-color: #DB4437;
+    border-color: #DB4437;
+    color: var(--skillswap-text-light);
+    transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+.btn-google:hover {
+    background-color: #C23326;
+    border-color: #C23326;
+    color: var(--skillswap-text-light);
+}
+
+/* 未読メッセージ通知の調整 */
+.alert.alert-info {
+    background-color: var(--status-info-light) !important; /* 薄いグレー */
+    border-color: var(--status-info) !important;
+    color: var(--skillswap-text-dark) !important; /* 濃いめのテキスト */
+    font-weight: bold;
+}
+/* alert-info 内のボタンはプライマリカラーに統一 */
+.alert-info .btn-primary {
+    background-color: var(--skillswap-primary);
+    border-color: var(--skillswap-primary);
+    color: var(--skillswap-text-light);
+}
+.alert-info .btn-primary:hover {
+    background-color: var(--skillswap-primary-dark);
+    border-color: var(--skillswap-primary-dark);
+}
+
+/* 管理者からの警告カード内のアラート */
+.card-body .alert-danger {
+    background-color: var(--status-danger-light) !important; /* 薄い赤 */
+    border-color: var(--status-danger) !important;
+    color: #721c24 !important; /* Bootstrap dangerのテキスト色 */
+}
+.card-body .alert-danger .alert-heading {
+    color: var(--status-danger) !important;
+}
+.card-body .alert-danger .btn-outline-danger {
+    color: var(--status-danger) !important;
+    border-color: var(--status-danger) !important;
+}
+.card-body .btn-outline-danger:hover { /* ユーザー通報時のコメントのボタン */
+    background-color: var(--status-danger) !important;
+    color: var(--skillswap-text-light) !important;
+}
+
+
+/* スキル管理カード内のボタンはプライマリカラーに統一 */
+.card-body .btn-success { /* HTML側のクラスは.btn-successだが、CSSでブランドカラーに上書き */
+    background-color: var(--skillswap-primary);
+    border-color: var(--skillswap-primary);
+    color: var(--skillswap-text-light);
+}
+.card-body .btn-success:hover {
+    background-color: var(--skillswap-primary-dark);
+    border-color: var(--skillswap-primary-dark);
+}
+
+/* スキルカードのホバーエフェクト（変更なし） */
+.skill-card-link {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+.skill-card-link:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* マッチング履歴カード内のボタン */
+/* メッセージを見るボタンはプライマリカラー */
+.matching-list .btn-primary {
+    background-color: var(--skillswap-primary); /* メインの青 */
+    border-color: var(--skillswap-primary);
+    color: var(--skillswap-text-light);
+}
+.matching-list .btn-primary:hover {
+    background-color: var(--skillswap-primary-dark); /* ホバー時は濃い青 */
+    border-color: var(--skillswap-primary-dark);
+}
+
+/* 承認ボタン (ステータス: 成功) */
+.matching-list .btn-success {
+    background-color: var(--status-success); /* ブランドの濃い青 */
+    border-color: var(--status-success);
+    color: var(--skillswap-text-light);
+}
+.matching-list .btn-success:hover {
+    background-color: var(--skillswap-primary); /* ホバー時はメインの青 */
+    border-color: var(--skillswap-primary);
+}
+
+/* 拒否ボタン (ステータス: 危険) */
+.matching-list .btn-danger {
+    background-color: var(--status-danger);
+    border-color: var(--status-danger);
+    color: var(--skillswap-text-light);
+}
+.matching-list .btn-danger:hover {
+    background-color: var(--status-danger-dark);
+    border-color: var(--status-danger-dark);
+}
+
+/* 申請取り消し/キャンセルボタン (ステータス: 警告) */
+.matching-list .btn-warning {
+    background-color: var(--status-warning); /* 赤のバリエーション */
+    border-color: var(--status-warning);
+    color: var(--skillswap-text-light);
+}
+.matching-list .btn-warning:hover {
+    background-color: var(--status-warning-dark);
+    border-color: var(--status-warning-dark);
+}
+
+/* 完了ボタン (ステータス: 情報) */
+/* ここを修正：セレクタから.matching-listを削除し、btn-info全体に適用 */
+.btn-info { 
+    background-color: var(--status-info); /* グレー */
+    border-color: var(--status-info);
+    color: var(--skillswap-text-light);
+}
+.btn-info:hover {
+    background-color: var(--status-info-dark);
+    border-color: var(--status-info-dark);
+}
+
+/* バッジの色の調整 */
+/* ステータスが0（保留中）の場合のバッジスタイル */
+.badge.bg-warning { /* 元々bg-warningが使われている箇所（ステータス0） */
+    background-color: var(--status-pending) !important; /* 保留中はミディアムグレー */
+    color: var(--skillswap-text-light) !important;
+}
+.badge.bg-success {
+    background-color: var(--status-success-light) !important; /* 薄い青 */
+    color: var(--skillswap-primary-dark) !important; /* テキストは濃い青 */
+}
+.badge.bg-danger {
+    background-color: var(--status-danger-light) !important; /* 薄い赤 */
+    color: var(--status-danger) !important;
+}
+/* ステータスが完了の場合、bg-infoを使用していると想定 */
+.badge.bg-info {
+    background-color: var(--status-info-light) !important; /* 薄いグレー */
+    color: var(--skillswap-text-dark) !important;
+}
+
+/* データエクスポートモーダルのボタンもプライマリカラーに統一 */
+#exportHistoryModal .modal-footer .btn-primary {
+    background-color: var(--skillswap-primary);
+    border-color: var(--skillswap-primary);
+    color: var(--skillswap-text-light);
+}
+#exportHistoryModal .modal-footer .btn-primary:hover {
+    background-color: var(--skillswap-primary-dark);
+    border-color: var(--skillswap-primary-dark);
+}
+
+/* HTMLからのテキスト色指定を調整 */
+.text-primary { /* <span class="text-primary"> のスキル名 */
+    color: var(--skillswap-primary-dark) !important; /* 濃い青 */
+}
+
+.text-success { /* <span class="text-success"> のユーザー名 */
+    color: var(--skillswap-text-dark) !important; /* 濃いグレー */
+}
 /* スキルカードのホバーエフェクト */
 .skill-link {
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;

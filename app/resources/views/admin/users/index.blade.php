@@ -21,7 +21,8 @@
     @endif
 
     <div class="card shadow-sm mb-4">
-        <div class="card-header bg-primary text-white">
+        {{-- カードヘッダーをテーマカラーに --}}
+        <div class="card-header user-card-header text-white">
             ユーザー一覧
         </div>
         <div class="card-body">
@@ -29,22 +30,23 @@
             <form action="{{ route('admin.users.index') }}" method="GET" class="mb-3">
                 <div class="input-group">
                     <input type="text" name="search" class="form-control" placeholder="名前またはメールアドレスで検索" value="{{ request('search') }}">
-                    <button class="btn btn-outline-secondary ms-2" type="submit">検索</button>
+                    {{-- 検索ボタンをメインカラーに --}}
+                    <button class="btn btn-primary" type="submit">検索</button>
                     @if(request('search'))
-                        <a href="{{ route('admin.users.index') }}" class="btn btn-outline-danger">クリア</a>
+                        {{-- クリアボタンは危険色に --}}
+                        <a href="{{ route('admin.users.index') }}" class="btn btn-danger ms-2">クリア</a>
                     @endif
                 </div>
             </form>
 
             <div class="table-responsive">
-                <table class="table table-hover table-striped">
-                                       <thead>
+                <table class="table table-hover table-striped user-table"> {{-- カスタムクラスを追加 --}}
+                    <thead>
                         <tr>
-                            {{-- ID列のソートボタン --}}
                             <th>
                                 <div class="d-flex align-items-center">
                                     ID
-                                    <a href="{{ route('admin.users.index', array_merge(request()->query(), ['sort' => 'id', 'direction' => (request('sort') == 'id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                    <a href="{{ route('admin.users.index', array_merge(request()->query(), ['sort' => 'id', 'direction' => (request('sort') == 'id' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none user-sort-link">
                                         @if(request('sort') == 'id')
                                             @if(request('direction') == 'asc')
                                                 &#9650;
@@ -59,11 +61,10 @@
                             </th>
                             <th>名前</th>
                             <th>メールアドレス</th>
-                            {{-- ロール列のソートボタン --}}
                             <th>
                                 <div class="d-flex align-items-center">
                                     ロール
-                                    <a href="{{ route('admin.users.index', array_merge(request()->query(), ['sort' => 'role', 'direction' => (request('sort') == 'role' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none text-dark">
+                                    <a href="{{ route('admin.users.index', array_merge(request()->query(), ['sort' => 'role', 'direction' => (request('sort') == 'role' && request('direction') == 'asc') ? 'desc' : 'asc'])) }}" class="ms-1 text-decoration-none user-sort-link">
                                         @if(request('sort') == 'role')
                                             @if(request('direction') == 'asc')
                                                 &#9650;
@@ -86,11 +87,11 @@
                                 <td>{{ $user->id }}</td>
                                 <td>{{ $user->name }}</td>
                                 <td>{{ $user->email }}</td>
-                                <td><span class="badge {{ $user->role === 'admin' ? 'bg-danger' : ($user->role === 'moderator' ? 'bg-warning text-dark' : 'bg-secondary') }}">{{ ucfirst($user->role) }}</span></td>
+                                <td><span class="badge {{ $user->role === 'admin' ? 'bg-danger' : ($user->role === 'moderator' ? 'user-role-moderator-badge' : 'bg-secondary') }}">{{ ucfirst($user->role) }}</span></td> {{-- moderatorはカスタムバッジに --}}
                                 <td>{{ $user->created_at->format('Y-m-d H:i') }}</td>
                                 <td>
                                     {{-- 編集ボタンをモーダル起動用に変更 --}}
-                                    <button type="button" class="btn btn-sm btn-info text-white me-1 edit-user-btn"
+                                    <button type="button" class="btn btn-sm btn-secondary me-1 edit-user-btn" {{-- グレー系ボタンに --}}
                                             data-bs-toggle="modal" data-bs-target="#editUserModal"
                                             data-id="{{ $user->id }}"
                                             data-name="{{ $user->name }}"
@@ -116,7 +117,8 @@
 
             {{-- ページネーションリンク --}}
             <div class="d-flex justify-content-center">
-                {{ $users->appends(request()->query())->links() }}
+                {{-- ページネーションリンクにもカスタムスタイルを適用 --}}
+                 {{ $users->appends(request()->query())->links() }}
             </div>
         </div>
     </div>
@@ -126,9 +128,10 @@
 <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
+            {{-- モーダルヘッダーもテーマカラーに --}}
+            <div class="modal-header user-modal-header text-white">
                 <h5 class="modal-title" id="editUserModalLabel">ユーザー編集</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button> {{-- 閉じるボタンの色を白に --}}
             </div>
             <form id="editUserForm" method="POST">
                 @csrf
@@ -150,15 +153,6 @@
                             <option value="admin">Admin</option>
                         </select>
                     </div>
-                    {{-- パスワード変更も可能にする場合は、ここにパスワードフィールドを追加 --}}
-                    {{-- <div class="mb-3">
-                        <label for="modalUserPassword" class="form-label">新しいパスワード (変更する場合のみ)</label>
-                        <input type="password" class="form-control" id="modalUserPassword" name="password">
-                    </div>
-                    <div class="mb-3">
-                        <label for="modalUserPasswordConfirmation" class="form-label">新しいパスワード (確認)</label>
-                        <input type="password" class="form-control" id="modalUserPasswordConfirmation" name="password_confirmation">
-                    </div> --}}
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
@@ -170,40 +164,150 @@
 </div>
 @endsection
 
+---
+
+@push('styles')
+<style>
+/* --- CSS変数の定義（必須） --- */
+:root {
+    --skillswap-primary:rgb(110, 161, 209); /* メインブルー（落ち着いた青） */
+    --skillswap-primary-dark:rgb(121, 165, 203); /* メインカラーより濃い青（ホバー用やアクセントに） */
+    --skillswap-text-light: #ffffff; /* 明るい背景用テキスト（白） */
+    --skillswap-text-dark: #333333; /* 暗い背景用テキスト（濃いグレー） */
+
+    /* このページで使うステータスカラー */
+    --status-info: #6c757d; /* ミディアムグレー (btn-secondary, user role: user) */
+    --status-info-dark: #5a6268;
+    --status-warning: #ffc107; /* Bootstrapのwarning (user role: moderator) */
+    --status-warning-dark: #e0a800;
+    --status-danger: #dc3545; /* Bootstrapのdanger (user role: admin) */
+    --status-danger-dark: #c82333;
+}
+
+/* --- カードヘッダーとモーダルヘッダーの色 --- */
+.user-card-header,
+.user-modal-header {
+    background-color: var(--skillswap-primary-dark) !important; /* 濃い青を適用 */
+    color: var(--skillswap-text-light) !important;
+    font-weight: bold;
+    border-bottom: 1px solid var(--skillswap-primary-dark) !important;
+}
+
+/* モーダルの閉じるボタンを白に */
+.btn-close-white {
+    filter: invert(1) grayscale(100%) brightness(200%); /* 白に変換 */
+}
+
+
+/* --- ボタンのスタイル調整 --- */
+
+/* メインのアクションボタン (btn-primary) */
+.btn-primary {
+    background-color: var(--skillswap-primary) !important;
+    border-color: var(--skillswap-primary) !important;
+    color: var(--skillswap-text-light) !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.btn-primary:hover {
+    background-color: var(--skillswap-primary-dark) !important;
+    border-color: var(--skillswap-primary-dark) !important;
+    color: var(--skillswap-text-light) !important;
+}
+
+/* btn-secondary の調整（落ち着いたグレー） */
+.btn-secondary {
+    background-color: var(--status-info) !important;
+    border-color: var(--status-info) !important;
+    color: var(--skillswap-text-light) !important; /* 文字色を白に */
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.btn-secondary:hover {
+    background-color: var(--status-info-dark) !important;
+    border-color: var(--status-info-dark) !important;
+    color: var(--skillswap-text-light) !important;
+}
+
+/* btn-danger の調整（削除ボタンなど） */
+.btn-danger {
+    background-color: var(--status-danger) !important;
+    border-color: var(--status-danger) !important;
+    color: var(--skillswap-text-light) !important;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.btn-danger:hover {
+    background-color: var(--status-danger-dark) !important;
+    border-color: var(--status-danger-dark) !important;
+    color: var(--skillswap-text-light) !important;
+}
+
+/* --- テーブルとソートリンクのスタイル --- */
+.user-table th {
+    background-color: var(--skillswap-primary); /* ヘッダーの背景色をメインカラーに */
+    color: var(--skillswap-text-light); /* 文字色を白に */
+    border-color: var(--skillswap-primary-dark); /* ボーダー色を濃い青に */
+    vertical-align: middle; /* 垂直方向中央揃え */
+}
+
+.user-sort-link {
+    color: var(--skillswap-text-light) !important; /* ソートリンクの文字色を白に */
+    opacity: 0.8; /* 少し透明度をつけて馴染ませる */
+}
+.user-sort-link:hover {
+    opacity: 1; /* ホバーで不透明に */
+}
+
+/* --- ロールバッジのスタイル --- */
+.user-role-moderator-badge { /* moderator (warning) バッジのカスタム */
+    background-color: var(--status-warning) !important;
+    color: var(--skillswap-text-dark) !important; /* 背景色に合わせて文字色を濃いグレーに */
+}
+
+/* --- ページネーションのスタイル --- */
+.pagination .page-item .page-link {
+    color: var(--skillswap-primary-dark); /* 通常のページリンクは濃い青 */
+}
+.pagination .page-item.active .page-link {
+    background-color: var(--skillswap-primary) !important; /* アクティブなページはメインの青 */
+    border-color: var(--skillswap-primary) !important;
+    color: var(--skillswap-text-light) !important; /* 文字色を白に */
+}
+.pagination .page-item:not(.active) .page-link:hover {
+    background-color: var(--status-info-light) !important; /* ホバー時は薄いグレー */
+    color: var(--skillswap-primary-dark) !important;
+}
+.pagination .page-item.disabled .page-link {
+    color: var(--status-info) !important; /* 無効なリンクはグレー */
+}
+
+/* 不要なスタイルを削除済み */
+</style>
+@endpush
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const editUserModal = document.getElementById('editUserModal');
     editUserModal.addEventListener('show.bs.modal', function (event) {
-        // モーダルを開くボタン
         const button = event.relatedTarget;
-
-        // データ属性からユーザー情報を取得
         const userId = button.getAttribute('data-id');
         const userName = button.getAttribute('data-name');
         const userEmail = button.getAttribute('data-email');
         const userRole = button.getAttribute('data-role');
 
-        // モーダル内のフォーム要素を取得
         const modalForm = editUserModal.querySelector('#editUserForm');
         const modalNameInput = editUserModal.querySelector('#modalUserName');
         const modalEmailInput = editUserModal.querySelector('#modalUserEmail');
         const modalRoleSelect = editUserModal.querySelector('#modalUserRole');
 
-        // フォームのアクションURLを設定
-        // 例: /admin/users/{id}
         modalForm.action = `/admin/users/${userId}`;
-
-        // フォームにユーザー情報を設定
         modalNameInput.value = userName;
         modalEmailInput.value = userEmail;
-        modalRoleSelect.value = userRole; // selectボックスの値を設定
+        modalRoleSelect.value = userRole;
     });
 
-    // モーダルが閉じられたときにフォームをリセット（任意）
     editUserModal.addEventListener('hidden.bs.modal', function (event) {
         const modalForm = editUserModal.querySelector('#editUserForm');
-        modalForm.reset(); // フォームをリセット
+        modalForm.reset();
     });
 });
 </script>

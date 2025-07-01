@@ -134,4 +134,15 @@ public function messages()
         return $this->hasMany(Message::class, 'matching_id');
     }
 
+public function unreadMessagesCount()
+{
+    $currentUserId = auth()->id();
+
+    return $this->messages()
+                // ここを 'sender_id' に修正
+                ->where('sender_id', '!=', $currentUserId) // 自分のメッセージは除く
+                ->whereNull('read_at') // read_at が null のものが未読
+                ->count();
+}
+
 }

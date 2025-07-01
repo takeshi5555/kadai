@@ -28,13 +28,24 @@
         <div class="collapse navbar-collapse " id="navbarNav">
             <ul class="navbar-nav ms-auto flex-column flex-lg-row align-items-lg-center"> {{-- メニュー項目を右寄せ --}}
                 @guest
-                    {{-- ゲストユーザーのメニュー (変更なし) --}}
+                    <li class="nav-item">
+                {{-- ここを修正 --}}
+                <a class="nav-link d-flex align-items-center" href="{{ route('login') }}">
+                    <i class="bi bi-box-arrow-in-right fs-5 me-1"></i> ログイン
+                </a>
+            </li>
+            <li class="nav-item">
+                {{-- ここを修正 --}}
+                <a class="nav-link d-flex align-items-center" href="{{ route('signup') }}">
+                    <i class="bi bi-person-plus-fill fs-5 me-1"></i> 新規登録
+                </a>
+            </li>
                 @else
                     {{-- ログイン中のユーザーのメニュー --}}
 
                     {{-- ★メッセージ通知アイコンを追加★ --}}
                     <li class="nav-item me-3">
-                        <a class="nav-link d-flex align-items-center" href="/messages">
+                        <a class="nav-link d-flex align-items-center" href="/matching/history">
                             <i class="bi bi-chat-dots-fill fs-5"></i>
                             <span>メッセージ</span> {{-- テキストをspanで囲む --}}
                             @if (Auth::user()->unread_message_count > 0)
@@ -48,7 +59,7 @@
 
                     {{-- ★マッチング通知アイコンも同様に修正★ --}}
                     <li class="nav-item me-3">
-                        <a class="nav-link d-flex align-items-center" href="/matching/requests">
+                        <a class="nav-link d-flex align-items-center" href="/matching/history">
                             <i class="bi bi-hand-index-thumb-fill fs-5"></i>
                             <span>マッチング</span> {{-- テキストをspanで囲む --}}
                             @if (Auth::user()->unconfirmed_matching_count > 0)
@@ -80,9 +91,7 @@
                     <li class="nav-item">
                         <a class="nav-link" href="/skill/manage">スキル管理</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/matching/history">マッチング履歴</a>
-                    </li>
+
                     <li class="nav-item">
                         <a href="#" class="nav-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                             ログアウト
